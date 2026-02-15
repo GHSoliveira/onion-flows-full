@@ -144,25 +144,32 @@ router.put('/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']),
 
 router.delete('/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']), requireTenant, async (req, res) => {
   try {
-    const allFlows = await adapter.getCollection('flows');
-    const flow = allFlows.find(f => f.id === req.params.id);
-
-    if (!flow) return res.status(404).json({ error: 'Fluxo não encontrado' });
-
-    if (req.user.role !== 'SUPER_ADMIN' && flow.tenantId !== req.tenantId) {
-      return res.status(403).json({ error: 'Acesso negado' });
-    }
-
-    // Usar deleteOne diretamente para persistir no MongoDB
     if (!adapter.db) await adapter.init();
     const collection = adapter.db.collection('flows');
-    await collection.deleteOne({ id: req.params.id });
 
-    await createLog('FLOW_ACTION', `Fluxo removido: ${flow.name}`, req.user.id);
-    res.json({ message: 'Fluxo removido', deleted: flow });
+    const query = { id: req.params.id };
+
+    // Respect tenant isolation for non-super-admin users.
+    if (req.user.role !== 'SUPER_ADMIN') {
+      query.tenantId = req.tenantId;
+    } else if (req.tenantId) {
+      query.tenantId = req.tenantId;
+    }
+
+    const flow = await collection.findOne(query, { projection: { id: 1, name: 1, tenantId: 1 } });
+    const result = await collection.deleteOne(query);
+
+    // Idempotent delete: if already removed, treat as success.
+    if (!result.deletedCount) {
+      return res.json({ message: 'Fluxo ja removido', deleted: null });
+    }
+
+    await createLog('FLOW_ACTION', `Fluxo removido: ${flow?.name || req.params.id}`, req.user.id);
+    res.json({ message: 'Fluxo removido', deleted: flow || { id: req.params.id } });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 export default router;
+
