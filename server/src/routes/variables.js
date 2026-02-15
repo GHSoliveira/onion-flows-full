@@ -35,9 +35,10 @@ router.post('/', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']), r
       updatedAt: new Date().toISOString()
     };
 
-    const variables = await adapter.getCollection('variables');
-    variables.push(variable);
-    await adapter.saveCollection('variables', variables);
+    if (!adapter.db) await adapter.init();
+    const collection = adapter.db.collection('variables');
+    await collection.insertOne(variable);
+
     await createLog('VARIABLE_CREATE', { id: variable.id, name: variable.name, tenantId: variable.tenantId }, req.user.id);
     res.status(201).json(variable);
   } catch (error) {
@@ -50,24 +51,32 @@ router.post('/', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']), r
 
 router.put('/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']), requireTenant, async (req, res) => {
   try {
-    const variables = await adapter.getCollection('variables');
-    const index = variables.findIndex(v => v.id === req.params.id);
+    if (!adapter.db) await adapter.init();
+    const collection = adapter.db.collection('variables');
 
-    if (index === -1) return res.status(404).json({ error: 'Variável não encontrada' });
-
-    const variable = variables[index];
-
-    if (req.user.role !== 'SUPER_ADMIN' && variable.tenantId !== req.tenantId) {
-      return res.status(403).json({ error: 'Acesso negado' });
+    const query = { id: req.params.id };
+    if (req.user.role !== 'SUPER_ADMIN') {
+      query.tenantId = req.tenantId;
+    } else if (req.tenantId) {
+      query.tenantId = req.tenantId;
     }
+
+    const variable = await collection.findOne(query);
+    if (!variable) return res.status(404).json({ error: 'Variavel nao encontrada' });
 
     const updates = { ...req.body };
     delete updates._id;
     delete updates.id;
-    variables[index] = { ...variable, ...updates, updatedAt: new Date().toISOString() };
-    await adapter.saveCollection('variables', variables);
-    await createLog('VARIABLE_UPDATE', { id: variables[index].id, name: variables[index].name, tenantId: variables[index].tenantId }, req.user.id);
-    res.json(variables[index]);
+
+    const updated = {
+      ...variable,
+      ...updates,
+      updatedAt: new Date().toISOString()
+    };
+
+    await collection.updateOne(query, { $set: updated });
+    await createLog('VARIABLE_UPDATE', { id: updated.id, name: updated.name, tenantId: updated.tenantId }, req.user.id);
+    res.json(updated);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -75,22 +84,23 @@ router.put('/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']),
 
 router.delete('/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']), requireTenant, async (req, res) => {
   try {
-    const allVariables = await adapter.getCollection('variables');
-    const variable = allVariables.find(v => v.id === req.params.id);
-
-    if (!variable) return res.status(404).json({ error: 'Variável não encontrada' });
-
-    if (req.user.role !== 'SUPER_ADMIN' && variable.tenantId !== req.tenantId) {
-      return res.status(403).json({ error: 'Acesso negado' });
-    }
-
-    // Usar deleteOne diretamente para persistir no MongoDB
     if (!adapter.db) await adapter.init();
     const collection = adapter.db.collection('variables');
-    await collection.deleteOne({ id: req.params.id });
+
+    const query = { id: req.params.id };
+    if (req.user.role !== 'SUPER_ADMIN') {
+      query.tenantId = req.tenantId;
+    } else if (req.tenantId) {
+      query.tenantId = req.tenantId;
+    }
+
+    const variable = await collection.findOne(query);
+    if (!variable) return res.status(404).json({ error: 'Variavel nao encontrada' });
+
+    await collection.deleteOne(query);
 
     await createLog('VARIABLE_DELETE', { id: variable.id, name: variable.name, tenantId: variable.tenantId }, req.user.id);
-    res.json({ message: 'Variável removida', deleted: variable });
+    res.json({ message: 'Variavel removida', deleted: variable });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

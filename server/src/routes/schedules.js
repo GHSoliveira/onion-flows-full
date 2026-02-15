@@ -24,15 +24,16 @@ router.post('/', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']), r
       id: `sch_${Date.now()}`,
       ...data,
       tenantId: req.user.role === 'SUPER_ADMIN'
-        ? req.body.tenantId || req.tenantId
+        ? (req.body.tenantId || req.tenantId)
         : req.tenantId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
 
-    const schedules = await adapter.getCollection('schedules');
-    schedules.push(schedule);
-    await adapter.saveCollection('schedules', schedules);
+    if (!adapter.db) await adapter.init();
+    const collection = adapter.db.collection('schedules');
+    await collection.insertOne(schedule);
+
     res.status(201).json(schedule);
   } catch (error) {
     if (error.name === 'ZodError') {
@@ -48,18 +49,22 @@ router.delete('/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN'
 
     if (!adapter.db) await adapter.init();
     const collection = adapter.db.collection('schedules');
-    const schedule = await collection.findOne({ id });
+
+    const query = { id };
+    if (req.user.role !== 'SUPER_ADMIN') {
+      query.tenantId = req.tenantId;
+    } else if (req.tenantId) {
+      query.tenantId = req.tenantId;
+    }
+
+    const schedule = await collection.findOne(query);
 
     if (!schedule) {
-      return res.status(404).json({ error: 'Horário não encontrado' });
+      return res.status(404).json({ error: 'Horario nao encontrado' });
     }
 
-    if (req.user.role !== 'SUPER_ADMIN' && schedule.tenantId !== req.tenantId) {
-      return res.status(403).json({ error: 'Acesso negado' });
-    }
-
-    await collection.deleteOne({ id });
-    res.json({ message: 'Horário removido', deleted: schedule });
+    await collection.deleteOne(query);
+    res.json({ message: 'Horario removido', deleted: schedule });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

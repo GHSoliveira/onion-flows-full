@@ -29,9 +29,10 @@ router.post('/', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']), r
       updatedAt: new Date().toISOString()
     };
 
-    const templates = await adapter.getCollection('messageTemplates');
-    templates.push(template);
-    await adapter.saveCollection('messageTemplates', templates);
+    if (!adapter.db) await adapter.init();
+    const collection = adapter.db.collection('messageTemplates');
+    await collection.insertOne(template);
+
     await createLog('TEMPLATE_CREATE', { id: template.id, name: template.name, tenantId: template.tenantId }, req.user.id);
     res.status(201).json(template);
   } catch (error) {
@@ -44,19 +45,20 @@ router.post('/', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']), r
 
 router.delete('/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']), requireTenant, async (req, res) => {
   try {
-    const allTemplates = await adapter.getCollection('messageTemplates');
-    const template = allTemplates.find(t => t.id === req.params.id);
-
-    if (!template) return res.status(404).json({ error: 'Template não encontrado' });
-
-    if (req.user.role !== 'SUPER_ADMIN' && template.tenantId !== req.tenantId) {
-      return res.status(403).json({ error: 'Acesso negado' });
-    }
-
-    // Usar deleteOne diretamente para persistir no MongoDB
     if (!adapter.db) await adapter.init();
     const collection = adapter.db.collection('messageTemplates');
-    await collection.deleteOne({ id: req.params.id });
+
+    const query = { id: req.params.id };
+    if (req.user.role !== 'SUPER_ADMIN') {
+      query.tenantId = req.tenantId;
+    } else if (req.tenantId) {
+      query.tenantId = req.tenantId;
+    }
+
+    const template = await collection.findOne(query);
+    if (!template) return res.status(404).json({ error: 'Template nao encontrado' });
+
+    await collection.deleteOne(query);
 
     await createLog('TEMPLATE_DELETE', { id: template.id, name: template.name, tenantId: template.tenantId }, req.user.id);
     res.json({ message: 'Template removido', deleted: template });

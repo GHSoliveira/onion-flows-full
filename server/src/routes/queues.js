@@ -19,7 +19,7 @@ router.get('/', authenticate, requireTenant, async (req, res) => {
 router.post('/', authenticate, authorize(['ADMIN']), requireTenant, async (req, res) => {
   try {
     const { name, color } = req.body;
-    if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
+    if (!name) return res.status(400).json({ error: 'Nome e obrigatorio' });
 
     const tenantId = req.user.role === 'SUPER_ADMIN'
       ? (req.query.tenantId || req.body.tenantId || req.tenantId)
@@ -33,9 +33,10 @@ router.post('/', authenticate, authorize(['ADMIN']), requireTenant, async (req, 
       createdAt: new Date().toISOString()
     };
 
-    const queues = await adapter.getCollection('queues');
-    queues.push(newQueue);
-    await adapter.saveCollection('queues', queues);
+    if (!adapter.db) await adapter.init();
+    const collection = adapter.db.collection('queues');
+    await collection.insertOne(newQueue);
+
     await createLog('QUEUE_CREATE', { id: newQueue.id, name: newQueue.name, tenantId: newQueue.tenantId }, req.user.id);
     res.json(newQueue);
   } catch (error) {
@@ -45,18 +46,20 @@ router.post('/', authenticate, authorize(['ADMIN']), requireTenant, async (req, 
 
 router.delete('/:id', authenticate, authorize(['ADMIN']), requireTenant, async (req, res) => {
   try {
-    const allQueues = await adapter.getCollection('queues');
-    const queue = allQueues.find(q => q.id === req.params.id);
-
-    if (!queue) return res.status(404).json({ error: 'Fila não encontrada' });
-    if (req.user.role !== 'SUPER_ADMIN' && queue.tenantId !== req.tenantId) {
-      return res.status(403).json({ error: 'Acesso negado' });
-    }
-
-    // Usar deleteOne diretamente para persistir no MongoDB
     if (!adapter.db) await adapter.init();
     const collection = adapter.db.collection('queues');
-    await collection.deleteOne({ id: req.params.id });
+
+    const query = { id: req.params.id };
+    if (req.user.role !== 'SUPER_ADMIN') {
+      query.tenantId = req.tenantId;
+    } else if (req.tenantId) {
+      query.tenantId = req.tenantId;
+    }
+
+    const queue = await collection.findOne(query);
+    if (!queue) return res.status(404).json({ error: 'Fila nao encontrada' });
+
+    await collection.deleteOne(query);
 
     await createLog('QUEUE_DELETE', { id: queue.id, name: queue.name, tenantId: queue.tenantId }, req.user.id);
     res.json({ message: 'Fila removida' });

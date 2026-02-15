@@ -43,10 +43,13 @@ router.post('/', authenticate, authorize(['ADMIN', 'SUPER_ADMIN']), requireTenan
     }
 
     await ensureTenantLimit(tenantId, 'users');
-    const users = await adapter.getCollection('users', tenantId);
 
-    if (users.find(u => u.username === username)) {
-      return res.status(400).json({ error: 'Username já está em uso' });
+    if (!adapter.db) await adapter.init();
+    const collection = adapter.db.collection('users');
+
+    const existing = await collection.findOne({ username, tenantId });
+    if (existing) {
+      return res.status(400).json({ error: 'Username ja esta em uso' });
     }
 
     const user = {
@@ -54,7 +57,7 @@ router.post('/', authenticate, authorize(['ADMIN', 'SUPER_ADMIN']), requireTenan
       name,
       username,
       password,
-      role: req.user.role === 'SUPER_ADMIN' && role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : role || 'AGENT',
+      role: req.user.role === 'SUPER_ADMIN' && role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : (role || 'AGENT'),
       queues: queues || [],
       permissions: req.user.role === 'SUPER_ADMIN' ? (permissions || []) : [],
       tenantId,
@@ -63,9 +66,7 @@ router.post('/', authenticate, authorize(['ADMIN', 'SUPER_ADMIN']), requireTenan
       createdBy: req.user.id
     };
 
-    const allUsers = await adapter.getCollection('users');
-    allUsers.push(user);
-    await adapter.saveCollection('users', allUsers);
+    await collection.insertOne(user);
 
     await createLog('USER_CREATE', { id: user.id, name: user.name, tenantId: user.tenantId, role: user.role }, req.user.id);
     const { password: _, ...userWithoutPassword } = user;
@@ -80,25 +81,22 @@ router.post('/', authenticate, authorize(['ADMIN', 'SUPER_ADMIN']), requireTenan
 
 router.delete('/:id', authenticate, authorize(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
   try {
-    const users = await adapter.getCollection('users');
-    const user = users.find(u => u.id === req.params.id);
-
-    if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
-
-    const tenantId = req.user.tenantId;
-
-    if (req.user.role !== 'SUPER_ADMIN' && user.tenantId !== tenantId) {
-      return res.status(403).json({ error: 'Acesso negado' });
-    }
-
-    // Usar deleteOne diretamente para persistir no MongoDB
     if (!adapter.db) await adapter.init();
     const collection = adapter.db.collection('users');
-    await collection.deleteOne({ id: req.params.id });
+
+    const query = { id: req.params.id };
+    if (req.user.role !== 'SUPER_ADMIN') {
+      query.tenantId = req.user.tenantId;
+    }
+
+    const user = await collection.findOne(query);
+    if (!user) return res.status(404).json({ error: 'Usuario nao encontrado' });
+
+    await collection.deleteOne(query);
 
     await createLog('USER_DELETE', { id: user.id, name: user.name, tenantId: user.tenantId, role: user.role }, req.user.id);
     const { password: _, ...userWithoutPassword } = user;
-    res.json({ message: 'Usuário removido', deleted: userWithoutPassword });
+    res.json({ message: 'Usuario removido', deleted: userWithoutPassword });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -111,22 +109,20 @@ router.put('/:id/permissions', authenticate, authorize(['SUPER_ADMIN']), async (
       return res.status(400).json({ error: 'permissions deve ser um array' });
     }
 
-    const users = await adapter.getCollection('users');
-    const userIndex = users.findIndex(u => u.id === req.params.id);
-    if (userIndex === -1) return res.status(404).json({ error: 'UsuÃ¡rio nÃ£o encontrado' });
+    if (!adapter.db) await adapter.init();
+    const collection = adapter.db.collection('users');
 
-    if (users[userIndex].role !== 'SUPER_ADMIN') {
-      return res.status(400).json({ error: 'Somente SUPER_ADMIN pode ter permissÃµes globais' });
+    const result = await collection.updateOne(
+      { id: req.params.id, role: 'SUPER_ADMIN' },
+      { $set: { permissions, updatedAt: new Date().toISOString() } }
+    );
+
+    if (!result.matchedCount) {
+      return res.status(404).json({ error: 'Usuario SUPER_ADMIN nao encontrado' });
     }
 
-    users[userIndex] = {
-      ...users[userIndex],
-      permissions,
-      updatedAt: new Date().toISOString()
-    };
-
-    await adapter.saveCollection('users', users);
-    res.json({ id: users[userIndex].id, permissions: users[userIndex].permissions || [] });
+    const updated = await collection.findOne({ id: req.params.id }, { projection: { id: 1, permissions: 1 } });
+    res.json({ id: updated.id, permissions: updated.permissions || [] });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
