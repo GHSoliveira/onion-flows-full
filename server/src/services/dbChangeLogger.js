@@ -2,6 +2,7 @@ import adapter from '../../db/DatabaseAdapter.js';
 import { createLog } from './logs.js';
 
 let changeStream = null;
+const DB_CHANGE_LOGGER_ENABLED = process.env.DB_CHANGE_LOGGER_ENABLED === 'true';
 
 const safeStringifyId = (id) => {
   if (!id) return null;
@@ -27,6 +28,11 @@ const isHeartbeatOnlyUserUpdate = (operationType, collection, updateDescription)
 };
 
 export const startDbChangeLogger = async () => {
+  if (!DB_CHANGE_LOGGER_ENABLED) {
+    console.log('[DB] Change logger desativado (DB_CHANGE_LOGGER_ENABLED=false).');
+    return;
+  }
+
   try {
     if (!adapter.db) await adapter.init();
     const db = adapter.db;
@@ -39,11 +45,12 @@ export const startDbChangeLogger = async () => {
       { $match: { 'ns.coll': { $ne: 'systemLogs' } } }
     ];
 
-    changeStream = db.watch(pipeline, { fullDocument: 'updateLookup' });
+    // Avoid fullDocument lookup to reduce write latency impact.
+    changeStream = db.watch(pipeline);
 
     changeStream.on('change', async (change) => {
       try {
-        const { operationType, ns, documentKey, fullDocument, updateDescription } = change || {};
+        const { operationType, ns, documentKey, updateDescription } = change || {};
         const collection = ns?.coll || 'unknown';
 
         // Skip noisy heartbeat updates to avoid log spam and extra IO.
@@ -51,14 +58,18 @@ export const startDbChangeLogger = async () => {
           return;
         }
 
+        // High-volume collections can produce excessive log pressure.
+        if (operationType === 'update' && ['activeChats', 'users', 'telegramSessions'].includes(collection)) {
+          return;
+        }
+
         const payload = {
           collection,
           operation: operationType || 'unknown',
           documentKey: safeStringifyId(documentKey?._id || documentKey),
-          tenantId: fullDocument?.tenantId || null,
+          tenantId: null,
           updatedFields: updateDescription?.updatedFields || null,
-          removedFields: updateDescription?.removedFields || null,
-          document: fullDocument || null
+          removedFields: updateDescription?.removedFields || null
         };
 
         await createLog(`DB_${String(operationType || 'CHANGE').toUpperCase()}`, payload, 'system');
