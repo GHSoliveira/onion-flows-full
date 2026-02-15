@@ -7,6 +7,24 @@ SaaS de automacao conversacional multi-tenant com editor de fluxos, canais (What
 - Frontend (Vercel): https://onionwebflows.vercel.app/
 - Backend API (Render): https://onion-web-flows-backend.onrender.com/
 
+## Acesso de teste (sem super admin)
+
+Ambiente de demonstracao para recrutadores e testadores:
+
+- URL: https://onionwebflows.vercel.app/
+- Tenant: `Empresa-demo-1` (`tenant_1771126505079`)
+
+Usuarios de demonstracao:
+
+- Perfil `MANAGER`
+  - usuario: `root-manager`
+  - senha: `12345678`
+- Perfil `AGENT`
+  - usuario: `root-agent`
+  - senha: `12345678`
+
+Observacao: contas de demonstracao com permissoes limitadas, sem acesso `SUPER_ADMIN`.
+
 ## Problema e proposta
 
 Times de atendimento costumam depender de processos manuais para distribuicao, roteamento e resposta. O Onion Web Flows centraliza isso em um unico painel com:
