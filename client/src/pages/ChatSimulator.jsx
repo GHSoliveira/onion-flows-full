@@ -27,6 +27,8 @@ const ChatSimulator = () => {
   const [chatId, setChatId] = useState(null);
   const [currentCpf, setCurrentCpf] = useState(null);
   const [isClosed, setIsClosed] = useState(false);
+  const [resumeTriggeredNode, setResumeTriggeredNode] = useState(null);
+  const [chatMetadata, setChatMetadata] = useState(null);
   const chatEndRef = useRef(null);
 
 
@@ -34,12 +36,14 @@ const ChatSimulator = () => {
     const loadData = async () => {
       try {
         const [f, t, s] = await Promise.all([
-          apiRequest('/flows'),
+          apiRequest('/flows?limit=200&page=1'),
           apiRequest('/templates'),
           apiRequest('/schedules')
         ]);
         if (f && t && s) {
-          setFlows(await f.json());
+          const flowData = await f.json();
+          const flowList = Array.isArray(flowData) ? flowData : (flowData?.items || []);
+          setFlows(flowList);
           setTemplates(await t.json());
           setSchedules(await s.json());
         }
@@ -92,6 +96,34 @@ const ChatSimulator = () => {
       });
     }
     return localContext;
+  };
+
+  const DAY_LABELS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sábado'];
+
+  const toMinutes = (timeStr) => {
+    if (!timeStr) return null;
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+    return hours * 60 + minutes;
+  };
+
+  const isWithinRange = (nowMinutes, startMinutes, endMinutes) => {
+    if (startMinutes === null || endMinutes === null) return false;
+    if (startMinutes <= endMinutes) {
+      return nowMinutes >= startMinutes && nowMinutes <= endMinutes;
+    }
+    return nowMinutes >= startMinutes || nowMinutes <= endMinutes;
+  };
+
+  const isScheduleOpen = (schedule, reference = new Date()) => {
+    if (!schedule || !schedule.rules) return false;
+    const dayLabel = DAY_LABELS[reference.getDay()];
+    const rule = schedule.rules[dayLabel];
+    if (!rule || !rule.active) return false;
+    const startMinutes = toMinutes(rule.start);
+    const endMinutes = toMinutes(rule.end);
+    const currentMinutes = reference.getHours() * 60 + reference.getMinutes();
+    return isWithinRange(currentMinutes, startMinutes, endMinutes);
   };
 
   const addBotMessage = async (text, buttons = null, idChat) => {
@@ -267,18 +299,28 @@ const ChatSimulator = () => {
 
 
     if (node.type === 'scheduleNode') {
+      const schedule = schedules.find(s => s.id === node.data.scheduleId);
+      const isOpen = isScheduleOpen(schedule);
+      const branch = isOpen ? 'inside' : 'outside';
 
+      const childNode = flowData.nodes.find(n => n.id.startsWith(`child_${nodeId}_${branch}`));
 
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      const currentTime = currentHour * 60 + currentMinute;
-
-      const status = 'inside';
-      const edgeToCase = flowData.edges.find(e => e.source === nodeId && e.sourceHandle === status);
-      if (edgeToCase) {
-        const nextEdge = flowData.edges.find(e => e.source === edgeToCase.target);
-        if (nextEdge) processNextNode(nextEdge.target, flowData, currentVars, idChat);
+      if (childNode) {
+        const nextEdge = flowData.edges.find(e => e.source === childNode.id);
+        if (nextEdge) {
+          processNextNode(nextEdge.target, flowData, currentVars, idChat);
+        } else {
+          console.warn(`[SCHEDULE] Branch ${branch} não conectada após ${childNode.id}`);
+        }
+      } else {
+        console.warn(`[SCHEDULE] Branch ${branch} não encontrada para o nó ${nodeId}`);
+        const fallbackEdge = flowData.edges.find(e => e.source === nodeId);
+        if (fallbackEdge) {
+          const nextEdge = flowData.edges.find(e => e.source === fallbackEdge.target);
+          if (nextEdge) {
+            processNextNode(nextEdge.target, flowData, currentVars, idChat);
+          }
+        }
       }
       return;
     }
@@ -322,13 +364,31 @@ const ChatSimulator = () => {
       return;
     }
 
+    // caseNode é um nó intermediário criado para condições/templates
+    // Ele apenas redireciona para o próximo nó
+    if (node.type === 'caseNode') {
+      const edge = flowData.edges.find(e => e.source === nodeId);
+      if (edge) {
+        processNextNode(edge.target, flowData, currentVars, idChat);
+      }
+      return;
+    }
 
     if (node.type === 'queueNode') {
       const queue = node.data.queueName;
-      await addBotMessage(`Transferindo para o setor **${queue}**. Aguarde um momento...`, null, idChat);
+      const nextEdge = flowData.edges.find(e => e.source === nodeId);
+      const resumeNodeId = nextEdge ? nextEdge.target : null;
+      const waitMessage = node.data?.queueMessage || `Aguarde, em alguns instantes um especialista deve te atender.`;
+      await addBotMessage(waitMessage, null, idChat);
       await apiRequest('/chats/transfer', {
         method: 'POST',
-        body: JSON.stringify({ chatId: idChat, queue, reason: 'Fluxo automático' })
+        body: JSON.stringify({
+          chatId: idChat,
+          queue,
+          reason: 'Fluxo automático',
+          continueFlow: node.data.continueFlowAfterQueue ?? true,
+          resumeNodeId
+        })
       });
 
       return;
@@ -341,6 +401,20 @@ const ChatSimulator = () => {
       await apiRequest(`/chats/${idChat}/close`, { method: 'PUT', body: JSON.stringify({ continueFlow: false }) });
       setIsClosed(true);
       return;
+    }
+  };
+
+  const resumeFlow = async (nodeId, chatVars) => {
+    if (!nodeId || !activeFlow || !chatId) return;
+
+    try {
+      setResumeTriggeredNode(nodeId);
+      setIsClosed(false);
+      const varsToUse = chatVars || sessionVars;
+      await processNextNode(nodeId, activeFlow, varsToUse, chatId);
+      await apiRequest(`/chats/${chatId}/resume`, { method: 'POST' });
+    } catch (error) {
+      console.error("[RESUME] erro ao retomar fluxo:", error);
     }
   };
 
@@ -369,6 +443,7 @@ const ChatSimulator = () => {
     setActiveFlow(publishedFlow);
     setCurrentNodeId(null);
     setIsClosed(false);
+    setChatMetadata(chat);
 
     const startNode = publishedFlow.nodes.find(n => n.type === 'startNode');
     if (startNode) processNextNode(startNode.id, publishedFlow, {}, chat.id);
@@ -473,7 +548,6 @@ const ChatSimulator = () => {
     let isPolling = false;
 
     const pollData = async () => {
-
       if (isPolling || !isMounted || isClosed || !chatId || !currentCpf) {
         return;
       }
@@ -481,59 +555,59 @@ const ChatSimulator = () => {
       isPolling = true;
 
       try {
-        const res = await apiRequest('/chats/init', {
-          method: 'POST',
-          body: JSON.stringify({ customerCpf: currentCpf })
-        });
+        // Usar /chats/:id para buscar mensagens do chat
+        const res = await apiRequest(`/chats/${chatId}`);
 
         if (res && res.ok && isMounted) {
           const chatData = await res.json();
+          console.log('[POLL] Chat atualizado:', chatData.status, 'messages:', chatData.messages?.length);
 
           if (chatData.status === 'closed') {
             setIsClosed(true);
-            setMessages(chatData.messages);
+            setMessages(chatData.messages || []);
             isPolling = false;
             return;
           }
 
-
-          if (chatData.messages.length > messages.length) {
+          if (chatData.messages) {
             setMessages(chatData.messages);
           }
+
+          if (chatData.vars) {
+            setSessionVars(chatData.vars);
+          }
+
+          if (chatData.resumePending && chatData.resumeNodeId && activeFlow && chatData.resumeNodeId !== resumeTriggeredNode) {
+            setMessages(chatData.messages || []);
+            await resumeFlow(chatData.resumeNodeId, chatData.vars);
+          }
+          setChatMetadata(chatData);
         }
       } catch (e) {
-        console.error("Erro no polling", e);
+        console.error("[POLL] Erro:", e.message);
       }
 
       isPolling = false;
 
-
       if (isMounted && !isClosed) {
-        timeoutId = setTimeout(pollData, 3000);
+        timeoutId = setTimeout(pollData, 2000);
       }
     };
 
-    pollData();
+    // Iniciar polling após 1 segundo
+    timeoutId = setTimeout(pollData, 1000);
 
     return () => {
       isMounted = false;
       if (timeoutId) clearTimeout(timeoutId);
-
-      const waitForPolling = setInterval(() => {
-        if (!isPolling) {
-          clearInterval(waitForPolling);
-        }
-      }, 100);
-
-      setTimeout(() => clearInterval(waitForPolling), 5000);
     };
   }, [chatId, isClosed, currentCpf]);
 
   return (
-    <main className="content h-screen flex flex-col p-6 overflow-hidden bg-gray-50 dark:bg-gray-900">
+    <main className="content min-h-screen flex flex-col p-3 sm:p-4 lg:p-6 overflow-hidden bg-gray-50 dark:bg-gray-900">
 
-      {}
-      <div className="bg-white dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm mb-6 flex items-center justify-between">
+      { }
+      <div className="bg-white dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm mb-4 lg:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
             <Cpu size={24} />
@@ -544,9 +618,9 @@ const ChatSimulator = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <select
-            className="p-2 pr-8 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-700 dark:text-gray-200"
+            className="p-2 pr-8 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-700 dark:text-gray-200 w-full sm:w-auto"
             value={selectedFlowId}
             onChange={e => setSelectedFlowId(e.target.value)}
           >
@@ -557,7 +631,7 @@ const ChatSimulator = () => {
           <button
             onClick={startSimulation}
             disabled={!selectedFlowId}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm w-full sm:w-auto justify-center"
           >
             <Play size={16} /> Iniciar Sessão
           </button>
@@ -574,11 +648,10 @@ const ChatSimulator = () => {
         </div>
       </div>
 
-      <div className="flex flex-1 gap-6 min-h-0">
-
-        {}
+      <div className="flex flex-1 flex-col lg:flex-row gap-4 lg:gap-6 min-h-0">
+ 
         <div className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm flex flex-col overflow-hidden">
-          <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-gray-50/50 dark:bg-gray-900/50 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+          <div className="flex-1 p-4 lg:p-6 overflow-y-auto space-y-4 bg-gray-50/50 dark:bg-gray-900/50 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
             {messages.length === 0 && !chatId && (
               <div className="h-full flex flex-col items-center justify-center text-gray-400">
                 <Bot size={64} className="mb-4 opacity-20" />
@@ -636,7 +709,7 @@ const ChatSimulator = () => {
             <div ref={chatEndRef} />
           </div>
 
-          <form onSubmit={handleSend} className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+          <form onSubmit={handleSend} className="p-3 sm:p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex gap-3">
             <input
               className="flex-1 px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-gray-800 text-gray-900 dark:text-white"
               value={userInput}
@@ -653,22 +726,32 @@ const ChatSimulator = () => {
             </button>
           </form>
         </div>
-
-        {}
-        <div className="w-80 bg-[#0f172a] rounded-xl border border-gray-800 flex flex-col overflow-hidden shadow-lg">
+ 
+        <div className="w-full lg:w-80 bg-[#0f172a] rounded-xl border border-gray-800 flex flex-col overflow-hidden shadow-lg">
           <div className="p-4 border-b border-gray-800 bg-[#1e293b] flex items-center gap-2 text-gray-200">
             <Terminal size={16} className="text-green-400" />
             <span className="text-xs font-mono font-bold tracking-wider">MEMORY_DUMP</span>
           </div>
+
           <div className="flex-1 p-4 overflow-y-auto font-mono text-xs text-gray-400 space-y-4 scrollbar-thin scrollbar-thumb-gray-700">
             <div>
               <div className="text-gray-500 mb-1">
-              <div className="text-blue-400 break-all">{chatId || 'null'}</div>
-              {currentCpf && <div className="text-green-400 mt-1">CPF: {currentCpf}</div>}
+                <div className="text-blue-400 break-all">{chatId || 'null'}</div>
+                {currentCpf && (
+                  <div className="text-green-400 mt-1">CPF: {currentCpf}</div>
+                )}
+              </div>
+              {chatMetadata && (
+                <div className="text-[11px] text-gray-400 space-y-1">
+                  <div>Em espera de: <span className="text-white">{chatMetadata.queue || '---'}</span></div>
+                  <div>Agente responsável: <span className="text-blue-300">{chatMetadata.agentName || 'Aguardando agente'}</span></div>
+                  <div>Status: <span className="text-green-300">{chatMetadata.status || 'Aguardando'}</span></div>
+                </div>
+              )}
             </div>
 
-            <div>
-              <div className="text-gray-500 mb-2">
+          <div>
+            <div className="text-gray-500 mb-2">
               {Object.keys(sessionVars).length === 0 ? (
                 <span className="text-gray-600 italic">empty</span>
               ) : (
@@ -680,19 +763,19 @@ const ChatSimulator = () => {
                 ))
               )}
             </div>
+          </div>
 
-            {activeFlow && (
-              <div>
-                <div className="text-gray-500 mb-1">
+          {activeFlow && (
+            <div>
+              <div className="text-gray-500 mb-1">
                 <div className="text-orange-400">{activeFlow.name}</div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
-
+        </div>
       </div>
-    </main>
+     </main>
   );
 };
-
 export default ChatSimulator;

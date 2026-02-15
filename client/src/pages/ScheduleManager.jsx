@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import { getJSON, postJSON, deleteJSON } from '../services/api';
 import { Calendar, Save, Trash2, Clock, Check, Plus, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTenant } from '../context/TenantContext';
+import { SkeletonBox } from '../components/LoadingSkeleton';
 
 const DAYS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 
 const ScheduleManager = () => {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { tenant } = useTenant();
 
 
   const [name, setName] = useState('');
@@ -48,7 +51,12 @@ const ScheduleManager = () => {
 
       console.log("Enviando schedule:", { name, rules });
 
-      const newSchedule = await postJSON('/schedules', { name, rules });
+      const payload = { name, rules };
+      if (tenant && tenant.id && tenant.id !== 'super_admin') {
+        payload.tenantId = tenant.id;
+      }
+
+      const newSchedule = await postJSON('/schedules', payload);
 
       if (newSchedule && newSchedule.id) {
         toast.success("Grupo de horário salvo!");
@@ -91,14 +99,37 @@ const ScheduleManager = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="p-3 sm:p-4 lg:p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="space-y-2">
+            <SkeletonBox className="h-6 w-44" />
+            <SkeletonBox className="h-4 w-64" />
+          </div>
+          <SkeletonBox className="h-10 w-full sm:w-40" />
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-3">
+            <SkeletonBox className="h-4 w-32" />
+            <SkeletonBox className="h-10 w-full" />
+            <div className="grid grid-cols-2 gap-2">
+              <SkeletonBox className="h-10" />
+              <SkeletonBox className="h-10" />
+            </div>
+            <SkeletonBox className="h-10 w-full" />
+          </div>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-3">
+            <SkeletonBox className="h-4 w-28" />
+            {Array.from({ length: 5 }).map((_, index) => (
+              <SkeletonBox key={`schedule_${index}`} className="h-10 w-full" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-3 sm:p-4 lg:p-6 max-w-7xl mx-auto space-y-6">
 
       {}
       <div>
@@ -109,11 +140,11 @@ const ScheduleManager = () => {
         <p className="text-sm text-gray-500 dark:text-gray-400">Configure as janelas de funcionamento para seus fluxos.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
 
         {}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Plus className="w-5 h-5 text-blue-500" /> Novo Grupo
             </h2>
@@ -132,18 +163,18 @@ const ScheduleManager = () => {
               {}
               <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800/30">
                 <label className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase mb-2 block">Aplicar em massa (Dias ativos)</label>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                   <input type="time" value={bulkStart} onChange={e => setBulkStart(e.target.value)} className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm" />
                   <span className="text-gray-400">-</span>
                   <input type="time" value={bulkEnd} onChange={e => setBulkEnd(e.target.value)} className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm" />
-                  <button onClick={applyBulk} className="ml-auto text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded transition-colors">Aplicar</button>
+                  <button onClick={applyBulk} className="ml-auto text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded transition-colors w-full sm:w-auto">Aplicar</button>
                 </div>
               </div>
 
               {}
               <div className="space-y-2 border-t border-gray-100 dark:border-gray-700 pt-4">
                 {DAYS.map(day => (
-                  <div key={day} className={`flex items-center justify-between p-2 rounded-lg border transition-colors ${rules[day].active ? 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600' : 'bg-gray-50 dark:bg-gray-800/50 border-transparent opacity-60'}`}>
+                  <div key={day} className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 rounded-lg border transition-colors ${rules[day].active ? 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600' : 'bg-gray-50 dark:bg-gray-800/50 border-transparent opacity-60'}`}>
                     <label className="flex items-center gap-3 cursor-pointer">
                       <input
                         type="checkbox"

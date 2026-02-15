@@ -1,172 +1,112 @@
-# 🤖 ChatBot Multi-Tenant
+# Onion Web Flows
 
-Sistema de chatbot multi-tenant com interface administrativa completa, construído em Node.js, React e MongoDB.
+SaaS de automacao conversacional multi-tenant com editor de fluxos, canais (WhatsApp/Telegram), gestao de equipe e observabilidade operacional.
 
-## ✨ Funcionalidades
+## Demo em producao
 
-- 🔐 **Sistema de Auth** com JWT e bcrypt
-- 🏢 **Multi-Tenant** - múltiplas empresas isoladas
-- 👥 **Gestão de Usuários** com roles (Admin, Manager, Agent)
-- 🔄 **Fluxos de Conversa** - editor visual com nodes
-- 📊 **Dashboard Admin** - métricas e billing
-- 💬 **Simulador de Chat** - teste fluxos em tempo real
-- 📝 **Logs de Auditoria** - registro de ações
-- 🌙 **Dark Mode** - interface adaptativa
+- Frontend (Vercel): https://onionwebflows.vercel.app/
+- Backend API (Render): https://onion-web-flows-backend.onrender.com/
 
-## 🏗️ Arquitetura
+## Problema e proposta
+
+Times de atendimento costumam depender de processos manuais para distribuicao, roteamento e resposta. O Onion Web Flows centraliza isso em um unico painel com:
+
+- editor visual de fluxo conversacional;
+- controle de acesso por papel e tenant;
+- operacao de canais e filas;
+- metricas, logs e monitoramento.
+
+## Stack tecnica
+
+- Frontend: React 19, Vite, React Router, Zustand, React Flow, Socket.IO Client, Tailwind CSS.
+- Backend: Node.js, Express 5, MongoDB, JWT, bcrypt, Zod, Socket.IO.
+- Carga e testes de estresse: k6 (`k6/chat-load.js`, `k6/stress-suite.js`).
+- Deploy: Vercel (client) + Render (server).
+
+## Arquitetura resumida
 
 ```
-ChatBot/
-├── client/                 # Frontend React + Vite
-│   ├── src/
-│   │   ├── components/    # Componentes reutilizáveis
-│   │   ├── context/       # React Context (Auth, Tenant)
-│   │   ├── nodes/         # Custom React Flow nodes
-│   │   ├── pages/         # Páginas da aplicação
-│   │   └── services/      # API, Socket services
-│   └── dist/              # Build de produção
-└── server/                # Backend Node.js + Express
-    ├── db/                # Database Adapter (MongoDB)
-    └── index.js           # Servidor principal
+.
+|-- client/          # UI administrativa, editor de fluxo, dashboards e simulador
+|-- server/          # API REST, autenticacao, regras multi-tenant, integracoes de canal
+|-- k6/              # scripts de carga e estresse
+|-- .env.example     # variaveis de ambiente de referencia
+`-- README.md
 ```
 
-## 🚀 Quick Start
+Separacao intencional entre frontend e backend para facilitar deploy independente, escalabilidade por camada e manutencao por responsabilidade.
 
-### Pré-requisitos
+## Funcionalidades principais
+
+- Autenticacao JWT com controle de sessao.
+- Multi-tenant com isolamento logico por empresa.
+- RBAC com papeis (`SUPER_ADMIN`, `ADMIN`, `MANAGER`, `AGENT`).
+- Editor de fluxos com nodes customizados.
+- Simulador de conversa para validacao de fluxo.
+- Filas, tags, templates, variaveis e gerenciamento de usuarios.
+- Logs e endpoints de monitoramento.
+
+## Como rodar localmente
+
+### Pre-requisitos
+
 - Node.js 18+
-- MongoDB (local ou Atlas)
+- MongoDB local ou Atlas
 
-### Instalação
+### Backend
 
 ```bash
-# Clonar o repositório
-git clone https://github.com/seu-usuario/chatbot.git
-cd chatbot
-
-# Instalar dependências do servidor
 cd server
 npm install
-
-# Instalar dependências do cliente
-cd ../client
-npm install
-
-# Configurar variáveis de ambiente
-cd ../server
 cp .env.example .env
-# Editar .env com suas configurações
-
-# Iniciar desenvolvimento
-cd ..
 npm run dev
 ```
 
-### Variáveis de Ambiente (.env)
-
-```env
-# Servidor
-PORT=3001
-NODE_ENV=production
-CLIENT_URL=http://localhost:5173
-
-# JWT
-JWT_SECRET=sua_chave_secreta_super_segura
-JWT_EXPIRES_IN=8h
-
-# MongoDB Atlas (padrão)
-MONGODB_URI=mongodb+srv://...
-MONGODB_DB_NAME=fluxadmin
-
-# Rate Limiting
-RATE_LIMIT_WINDOW_MS=60000
-RATE_LIMIT_MAX_REQUESTS=1000
-LOGIN_RATE_LIMIT_MAX=5
-```
-
-### Scripts npm
+### Frontend
 
 ```bash
-npm run dev          # Iniciar servidor + cliente
-npm run server       # Apenas servidor (nodemon)
-npm run client       # Apenas cliente (Vite)
-npm run build        # Build de produção (client)
-npm run start        # Iniciar produção
+cd client
+npm install
+npm run dev
 ```
 
-## 👤 Usuário Admin Padrão
+Frontend padrao: `http://localhost:5173`  
+Backend padrao: `http://localhost:3001`
 
-| Campo   | Valor    |
-|---------|----------|
-| Login   | `admin`  |
-| Senha   | `123`    |
-| Role    | SUPER_ADMIN |
+## Variaveis de ambiente
 
-⚠️ **Altere a senha após o primeiro login!**
+- Base de referencia: `server/.env.example` e `.env.example` na raiz.
+- Campos criticos: `MONGODB_URI`, `JWT_SECRET`, `CLIENT_URL`, `PORT`.
+- Nunca commitar `.env` com segredo real.
 
-## 📡 API Endpoints
+## Endpoints uteis
 
-### Auth
-- `POST /api/auth/login` - Login
-- `GET /api/auth/heartbeat` - Verificar sessão
+- Health check: `GET /health`
+- Login: `POST /api/auth/login`
+- Sessao: `GET /api/auth/heartbeat`
+- Fluxos: `GET /api/flows`, `POST /api/flows`, `PUT /api/flows/:id`
+- Usuarios: `GET /api/users`, `POST /api/users`
 
-### Tenants
-- `GET /api/tenants` - Listar tenants
-- `POST /api/tenants/:id/switch` - Trocar tenant
-- `GET /api/super-admin/dashboard` - Dashboard geral
+Documentacao adicional de API: `server/API_DOCUMENTATION.md`.
 
-### Usuários
-- `GET /api/users` - Listar usuários
-- `POST /api/users` - Criar usuário
-- `DELETE /api/users/:id` - Remover usuário
+## Qualidade e engenharia
 
-### Fluxos
-- `GET /api/flows` - Listar fluxos
-- `POST /api/flows` - Criar fluxo
-- `GET /api/flows/:id` - Buscar fluxo por ID
-- `PUT /api/flows/:id` - Atualizar fluxo
-- `DELETE /api/flows/:id` - Remover fluxo
+- ESLint no frontend (`client/eslint.config.js`).
+- Scripts de carga com k6 para cenarios de estresse.
+- Validacao de payload no backend com Zod.
+- Rate limit e middlewares de seguranca (helmet/cors).
 
-### Filas
-- `GET /api/queues` - Listar filas
-- `POST /api/queues` - Criar fila
-- `DELETE /api/queues/:id` - Remover fila
+## Roadmap tecnico curto
 
-### Sistema
-- `GET /api/logs` - Logs de auditoria
-- `GET /health` - Health check
+- Cobertura de testes automatizados (API e fluxos criticos do frontend).
+- Pipeline CI unificado para lint + build + testes.
+- ADRs tecnicos em `docs/decisions/`.
 
-## 🔑 Roles e Permissões
+## Documentacao de carreira/projeto
 
-| Role       | Permissões                              |
-|------------|-----------------------------------------|
-| SUPER_ADMIN| Acesso total, todos tenants            |
-| ADMIN      | Gestão de equipe e fluxos do tenant    |
-| MANAGER    | Criar/editar fluxos                    |
-| AGENT      | Acesso ao chat apenas                  |
+- Plano de commits para publicar de forma profissional: `docs/commit-plan.md`
+- Checklist final de publicacao: `docs/publish-checklist.md`
 
-## 🎨 Tecnologias
+## Licenca
 
-**Frontend:**
-- React 19
-- Vite
-- TailwindCSS
-- React Router
-- React Flow (editor de fluxos)
-- Socket.IO Client
-- Lucide Icons
-
-**Backend:**
-- Node.js
-- Express 5
-- MongoDB + Mongoose
-- JWT + bcrypt
-- Socket.IO
-- Zod (validação)
-
-## 📄 Licença
-
-MIT License - sinta-se livre para usar e modificar!
-
----
-
-Feito com ⚡ por [Seu Nome]
+Este projeto usa a licenca definida no repositorio.

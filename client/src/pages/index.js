@@ -8,6 +8,7 @@ import AgentManager from './pages/AgentManager';
 import ScheduleManager from './pages/ScheduleManager';
 import SystemLogs from './pages/SystemLogs';
 import MonitoringDashboard from './pages/MonitoringDashboard';
+import Channels from './pages/Channels';
 
 const FlowEditor = React.lazy(() => import('./pages/FlowEditor'));
 const AgentWorkspace = React.lazy(() => import('./pages/AgentWorkspace'));
@@ -22,6 +23,7 @@ export {
   ScheduleManager,
   SystemLogs,
   MonitoringDashboard,
+  Channels,
   FlowEditor,
   AgentWorkspace,
 };

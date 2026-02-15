@@ -23,6 +23,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         localStorage.removeItem('user');
         localStorage.removeItem('token');
+        localStorage.removeItem('selectedTenant');
         window.location.href = '/login';
     };
 
@@ -38,7 +39,14 @@ export const AuthProvider = ({ children }) => {
             if (!isMounted) return;
 
             try {
-                await apiRequest('/auth/heartbeat');
+                const res = await apiRequest('/auth/heartbeat');
+                if (res && res.ok) {
+                    const data = await res.json();
+                    if (data?.user) {
+                        setUser(data.user);
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                    }
+                }
                 consecutiveErrors = 0;
             } catch (error) {
                 consecutiveErrors++;

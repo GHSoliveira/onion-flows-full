@@ -38,20 +38,58 @@ const AnchorConfig = ({ data, onChange }) => (
 
 
 
-const ScriptConfig = ({ data, onChange }) => (
-    <div className="space-y-4">
-        <div>
-            <label className="text-xs font-bold text-gray-500 uppercase">Código JavaScript (Sandbox)</label>
-            <p className="text-[10px] text-gray-400 mb-2">Use o objeto 'vars' para ler/escrever. Ex: vars.nome = vars.nome.toUpperCase();</p>
-            <textarea
-                className="w-full p-3 border rounded-lg h-64 font-mono text-xs dark:bg-gray-900 dark:text-green-400 focus:ring-2 focus:ring-blue-500 outline-none"
-                value={data.script || ''}
-                onChange={e => onChange({ script: e.target.value })}
-                placeholder="// Escreva seu código aqui..."
-            />
+const ScriptConfig = ({ data, onChange }) => {
+    const [status, setStatus] = useState({ type: 'idle', message: 'Sem validação.' });
+
+    useEffect(() => {
+        setStatus({ type: 'idle', message: 'Sem validação.' });
+    }, [data.script]);
+
+    const validateScript = () => {
+        try {
+            new Function('vars', data.script || '');
+            setStatus({ type: 'ok', message: 'Sintaxe OK.' });
+        } catch (error) {
+            setStatus({ type: 'error', message: error.message || 'Erro de sintaxe.' });
+        }
+    };
+
+    const statusStyles = status.type === 'ok'
+        ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-200'
+        : status.type === 'error'
+            ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200'
+            : 'border-gray-200 bg-gray-50 text-gray-500 dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-400';
+
+    return (
+        <div className="space-y-4">
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase">Código JavaScript (Sandbox)</label>
+                <p className="text-[10px] text-gray-400 mb-2">Use o objeto 'vars' para ler/escrever. Ex: vars.nome = vars.nome.toUpperCase();</p>
+                <textarea
+                    className="w-full p-3 border rounded-lg h-64 font-mono text-xs dark:bg-gray-900 dark:text-green-400 focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={data.script || ''}
+                    onChange={e => onChange({ script: e.target.value })}
+                    placeholder="// Escreva seu código aqui..."
+                />
+            </div>
+
+            <div className="flex items-center justify-between">
+                <span className="text-[10px] text-gray-400">Validação não executa o script, apenas verifica sintaxe.</span>
+                <button
+                    type="button"
+                    onClick={validateScript}
+                    className="px-3 py-1.5 text-xs font-semibold bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                    Validar
+                </button>
+            </div>
+
+            <div className={`border rounded-lg p-3 text-[11px] font-mono ${statusStyles}`}>
+                {status.message}
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 const ConditionConfig = ({ data, onChange, vars }) => (
     <div className="space-y-4">
@@ -152,6 +190,7 @@ const TemplateConfig = ({ data, onChange, templates }) => (
 
 const HttpRequestConfig = ({ data, onChange, vars }) => {
     const methods = ['GET', 'POST', 'PUT', 'DELETE'];
+    const responseTypes = ['json', 'text'];
 
     const addMapping = () => {
         const newMappings = [...(data.mappings || []), { jsonPath: '', varName: '' }];
@@ -196,6 +235,51 @@ const HttpRequestConfig = ({ data, onChange, vars }) => {
             <p className="text-[10px] text-gray-400">
                 Dica: Use <code>{'{variavel}'}</code> na URL para enviar dados dinâmicos.
             </p>
+
+            <div className="grid grid-cols-2 gap-3">
+                <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase">Tipo de resposta</label>
+                    <select
+                        className="w-full mt-1 p-2 border rounded-lg text-sm dark:bg-gray-700 dark:text-white"
+                        value={data.responseType || 'json'}
+                        onChange={e => onChange({ responseType: e.target.value })}
+                    >
+                        {responseTypes.map(r => <option key={r} value={r}>{r.toUpperCase()}</option>)}
+                    </select>
+                </div>
+                <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase">Timeout (ms)</label>
+                    <input
+                        type="number"
+                        className="w-full mt-1 p-2 border rounded-lg text-sm dark:bg-gray-700 dark:text-white"
+                        value={data.timeoutMs || 10000}
+                        onChange={e => onChange({ timeoutMs: Number(e.target.value) || 10000 })}
+                    />
+                </div>
+            </div>
+
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase">Headers (JSON)</label>
+                <textarea
+                    className="w-full mt-1 p-2 border rounded-lg text-sm dark:bg-gray-700 dark:text-white font-mono h-24"
+                    placeholder='{"Content-Type":"application/json"}'
+                    value={data.headersJson || ''}
+                    onChange={e => onChange({ headersJson: e.target.value })}
+                />
+            </div>
+
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase">Body (opcional)</label>
+                <textarea
+                    className="w-full mt-1 p-2 border rounded-lg text-sm dark:bg-gray-700 dark:text-white font-mono h-24"
+                    placeholder='{"cpf":"{cpf}","nome":"{nome_cliente}"}'
+                    value={data.body || ''}
+                    onChange={e => onChange({ body: e.target.value })}
+                />
+                <p className="text-[10px] text-gray-400 mt-1">
+                    Dica: variáveis também funcionam no corpo.
+                </p>
+            </div>
 
             <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
                 <div className="flex justify-between items-center mb-3">
@@ -386,24 +470,42 @@ const NodeConfigModal = ({ node, isOpen, onClose, onSave, vars = [], templates =
         case 'queueNode':
             Title = 'Transferir para Fila';
             Content = (
-                <div className="space-y-4">
-                    <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase">Escolha a Fila de Destino</label>
-                        <select
-                            className="w-full mt-1 p-2 border rounded-lg dark:bg-gray-700 dark:text-white"
-                            value={localData.queueName || ''}
-                            onChange={e => handleLocalChange({ queueName: e.target.value })}
-                        >
-                            <option value="">Selecione uma fila...</option>
-                            {queues.map(q => (
-                                <option key={q.id} value={q.name}>{q.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-[11px] text-orange-700 dark:text-orange-300">
-                        Ao atingir este nó, o bot será pausado e o cliente entrará na fila selecionada aguardando um agente humano.
-                    </div>
-                </div>
+        <div className="space-y-4">
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase">Escolha a Fila de Destino</label>
+                <select
+                    className="w-full mt-1 p-2 border rounded-lg dark:bg-gray-700 dark:text-white"
+                    value={localData.queueName || ''}
+                    onChange={e => handleLocalChange({ queueName: e.target.value })}
+                >
+                    <option value="">Selecione uma fila...</option>
+                    {queues.map(q => (
+                        <option key={q.id} value={q.name}>{q.name}</option>
+                    ))}
+                </select>
+            </div>
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase">Mensagem de espera</label>
+                <textarea
+                    className="w-full mt-1 p-2 border rounded-lg dark:bg-gray-700 dark:text-white min-h-[90px]"
+                    value={localData.queueMessage || ''}
+                    onChange={e => handleLocalChange({ queueMessage: e.target.value })}
+                    placeholder="Aguarde, em alguns instantes um especialista deve te atender."
+                />
+            </div>
+            <label className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                <input
+                    type="checkbox"
+                    checked={localData.continueFlowAfterQueue ?? true}
+                    className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    onChange={e => handleLocalChange({ continueFlowAfterQueue: e.target.checked })}
+                />
+                Continuar fluxo após o agente finalizar
+            </label>
+            <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-[11px] text-orange-700 dark:text-orange-300">
+                Ao atingir este nó, o bot será pausado e o cliente entrará na fila selecionada aguardando um agente humano.
+            </div>
+        </div>
             );
             break;
         case 'scheduleNode':
@@ -422,9 +524,9 @@ const NodeConfigModal = ({ node, isOpen, onClose, onSave, vars = [], templates =
             Title = 'Entrada de Dados';
             Content = (
                 <div className="space-y-4">
-                    <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase">Pergunta do Bot</label>
-                        <textarea
+                <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase">Pergunta do Bot</label>
+                    <textarea
                             className="w-full mt-1 p-2 border rounded dark:bg-gray-700 h-20"
                             value={localData.text || ''}
                             onChange={e => handleLocalChange({ text: e.target.value })}
@@ -444,6 +546,49 @@ const NodeConfigModal = ({ node, isOpen, onClose, onSave, vars = [], templates =
                         <p className="text-[10px] text-gray-400 mt-1">
                             A resposta do cliente será guardada nesta variável para uso posterior.
                         </p>
+                    </div>
+                </div>
+            );
+            break;
+        case 'ratingNode':
+            Title = 'Solicitar Nota (1-5)';
+            Content = (
+                <div className="space-y-4">
+                    <div>
+                        <label className="text-xs font-bold text-gray-500 uppercase">Pergunta do Bot</label>
+                        <textarea
+                            className="w-full mt-1 p-2 border rounded dark:bg-gray-700 h-20"
+                            value={localData.text || ''}
+                            onChange={e => handleLocalChange({ text: e.target.value })}
+                            placeholder="Avalie este atendimento de 1 a 5."
+                        />
+                        <p className="text-[10px] text-gray-400 mt-1">
+                            O cliente deve digitar um número entre 1 e 5; respostas inválidas retornam erro.
+                        </p>
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-gray-500 uppercase">Resposta inválida</label>
+                        <input
+                            type="text"
+                            className="w-full mt-1 p-2 border rounded dark:bg-gray-700"
+                            value={localData.errorText || ''}
+                            onChange={e => handleLocalChange({ errorText: e.target.value })}
+                            placeholder="Ex: Digite um número entre 1 e 5."
+                        />
+                        <p className="text-[10px] text-gray-400 mt-1">
+                            Texto exibido quando o cliente responde com algo diferente de 1 a 5.
+                        </p>
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-gray-500 uppercase">Salvar resposta na variável:</label>
+                        <select
+                            className="w-full mt-1 p-2 border rounded dark:bg-gray-700"
+                            value={localData.variableName || ''}
+                            onChange={e => handleLocalChange({ variableName: e.target.value })}
+                        >
+                            <option value="">Selecione uma variável...</option>
+                            {vars.map(v => <option key={v.id} value={v.name}>{v.name}</option>)}
+                        </select>
                     </div>
                 </div>
             );

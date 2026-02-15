@@ -25,7 +25,7 @@ class MongoAdapter {
     if (this.db) return;
 
     const uri = process.env.MONGODB_URI;
-    const dbName = process.env.MONGODB_DB_NAME || 'fiberbot';
+    const dbName = process.env.MONGODB_DB_NAME || 'onionflow';
 
     if (!uri) {
       throw new Error('MONGODB_URI não definido nas variáveis de ambiente');
@@ -111,3 +111,4 @@ class MongoAdapter {
 const adapter = new MongoAdapter();
 
 export default adapter;
+

@@ -1,14 +1,13 @@
 
-const BASE_URL = 'http://localhost:3001/api';
-const FALLBACK_URL = 'http://localhost:3001/api';
-
+// Sempre incluir /api na URL base
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const BASE_URL = `${API_BASE}/api`;
 
 const getTenantId = () => {
     try {
         const savedTenant = localStorage.getItem('selectedTenant');
         if (savedTenant) {
             const parsed = JSON.parse(savedTenant);
-
             if (parsed.id && parsed.id !== 'super_admin') {
                 return parsed.id;
             }
@@ -29,16 +28,19 @@ export const apiRequest = async (endpoint, options = {}) => {
         ...options.headers,
     };
 
-    let url = `${BASE_URL}${endpoint}`;
+    // Garantir que endpoint começa com /
+    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    let url = `${BASE_URL}${normalizedEndpoint}`;
 
 
-    const isLoginEndpoint = endpoint.includes('/auth/login');
+    const isLoginEndpoint = normalizedEndpoint.includes('/auth/login');
 
 
     if (!isLoginEndpoint) {
         const tenantId = getTenantId();
-        if (tenantId) {
-            const separator = endpoint.includes('?') ? '&' : '?';
+        const hasTenantParam = /[?&]tenantId=/.test(normalizedEndpoint);
+        if (tenantId && !hasTenantParam) {
+            const separator = normalizedEndpoint.includes('?') ? '&' : '?';
             url = `${url}${separator}tenantId=${tenantId}`;
         }
     }

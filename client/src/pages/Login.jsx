@@ -54,14 +54,14 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 font-sans bg-gray-50 dark:bg-slate-900 transition-colors duration-300">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 w-full max-w-md border border-gray-100 dark:border-gray-700">
+        <div className="min-h-screen flex items-center justify-center p-3 sm:p-4 font-sans bg-gray-50 dark:bg-slate-900 transition-colors duration-300">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-md border border-gray-100 dark:border-gray-700">
 
                 <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/30">
-                        <Lock className="w-8 h-8 text-white" />
+                    <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-gray-200 dark:border-slate-700">
+                        <img src="/Onion_logo_root.png" alt="Onion Flows" className="w-10 h-10 object-contain" />
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">FiberAdmin</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Onion Flows</h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm font-medium">Acesso restrito à equipe</p>
                 </div>
 
@@ -116,3 +116,4 @@ const Login = () => {
 };
 
 export default Login;
+

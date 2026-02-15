@@ -43,7 +43,7 @@ export default defineConfig({
         secure: false
       }
     },
-    port: 3000,  // Força porta fixa para evitar conflitos
-    host: '0.0.0.0' // Permite acesso externo se necessário
+    port: 3000,
+    host: '0.0.0.0'
   }
 })

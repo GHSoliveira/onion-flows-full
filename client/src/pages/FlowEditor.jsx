@@ -16,7 +16,7 @@ import {
   MessageSquare, TextCursorInput, Split, FileText,
   Clock, Users, Code, Globe, Hourglass,
   Database, Anchor, Send, Save, Rocket,
-  Flag, Play
+  Flag, Play, Star
 } from 'lucide-react';
 
 import { getJSON, putJSON } from '../services/api';
@@ -40,6 +40,7 @@ const nodeTypes = {
   delayNode: CustomNodes.DelayNode,
   queueNode: CustomNodes.QueueNode,
   scheduleNode: CustomNodes.ScheduleNode,
+  ratingNode: CustomNodes.RatingNode,
   caseNode: CustomNodes.CaseNode
 };
 
@@ -323,8 +324,21 @@ const FlowEditor = () => {
   };
 
   const save = async (publish = false) => {
-    if (publish && !window.confirm(`Publicar "${flowName}" em Produção?`)) return;
-
+    if (publish) {
+      const excluded = new Set(['endNode', 'finalNode', 'gotoNode']);
+      const sources = new Set(edges.map(e => e.source));
+      const disconnected = nodes.filter(n => !excluded.has(n.type) && !sources.has(n.id));
+      if (disconnected.length > 0) {
+        const labels = disconnected
+          .slice(0, 4)
+          .map(n => n.data?.customName || n.data?.text || n.type)
+          .join(', ');
+        const extra = disconnected.length > 4 ? ` (+${disconnected.length - 4})` : '';
+        toast.error(`Existem nós sem saída: ${labels}${extra}.`);
+        return;
+      }
+      if (!window.confirm(`Publicar "${flowName}" em Produção?`)) return;
+    }
 
     const cleanNodes = nodes.map(({ data, ...n }) => {
       const { availableVars, availableTemplates, availableSchedules, onDelete, onConfig, ...cleanData } = data;
@@ -332,9 +346,17 @@ const FlowEditor = () => {
     });
 
     try {
-      await putJSON(`/flows/${id}`, { nodes: cleanNodes, edges, publish });
+      await putJSON(`/flows/${id}`, { 
+        nodes: cleanNodes, 
+        edges, 
+        published: publish,
+        status: publish ? 'published' : 'draft'
+      });
       toast.success(publish ? "Publicado!" : "Rascunho Salvo");
-    } catch (e) { toast.error("Erro ao salvar"); }
+    } catch (e) { 
+      console.error("Erro ao salvar:", e);
+      toast.error("Erro ao salvar: " + (e.message || 'Erro desconhecido'));
+    }
   };
 
   return (
@@ -351,20 +373,21 @@ const FlowEditor = () => {
       />
 
       {}
-      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-4 py-2 flex items-center gap-4 shadow-sm z-10">
-        <span className="font-bold text-sm text-gray-700 dark:text-slate-200 px-2 border-r border-gray-200 dark:border-slate-700 mr-2">
+      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-3 sm:px-4 py-2 flex flex-wrap items-center gap-3 shadow-sm z-10">
+        <span className="font-bold text-sm text-gray-700 dark:text-slate-200 px-2 border-r border-gray-200 dark:border-slate-700 mr-2 truncate max-w-[160px] sm:max-w-[220px]">
           {flowName}
         </span>
 
         <div className="flex flex-1 gap-2 overflow-x-auto pb-1 no-scrollbar items-center">
 
-          <ToolButton icon={MessageSquare} label="Msg" onClick={() => createNode('messageNode')} />
-          <ToolButton icon={TextCursorInput} label="Input" onClick={() => createNode('inputNode')} />
-          <ToolButton icon={Split} label="If" onClick={() => createNode('conditionNode')} />
-          <ToolButton icon={FileText} label="Template" onClick={() => createNode('templateNode')} />
-          <ToolButton icon={Clock} label="Horário" onClick={() => createNode('scheduleNode')} />
-          <ToolButton icon={Users} label="Fila" onClick={() => createNode('queueNode')} />
-          <ToolButton icon={Code} label="Script" onClick={() => createNode('scriptNode')} />
+        <ToolButton icon={MessageSquare} label="Msg" onClick={() => createNode('messageNode')} />
+        <ToolButton icon={TextCursorInput} label="Input" onClick={() => createNode('inputNode')} />
+        <ToolButton icon={Split} label="If" onClick={() => createNode('conditionNode')} />
+        <ToolButton icon={FileText} label="Template" onClick={() => createNode('templateNode')} />
+        <ToolButton icon={Clock} label="Horário" onClick={() => createNode('scheduleNode')} />
+        <ToolButton icon={Users} label="Fila" onClick={() => createNode('queueNode')} />
+        <ToolButton icon={Star} label="Nota" onClick={() => createNode('ratingNode')} />
+        <ToolButton icon={Code} label="Script" onClick={() => createNode('scriptNode')} />
           <ToolButton icon={Globe} label="API" onClick={() => createNode('httpRequestNode')} />
           <ToolButton icon={Hourglass} label="Delay" onClick={() => createNode('delayNode')} />
           <ToolButton icon={Database} label="Set" onClick={() => createNode('setValueNode')} />
@@ -372,7 +395,7 @@ const FlowEditor = () => {
           <ToolButton icon={Send} label="Go" onClick={() => createNode('gotoNode')} />
           <ToolButton icon={Flag} label="Fim" onClick={() => createNode('finalNode')} color="text-red-500" />
         </div>
-        <div className="flex gap-2 ml-auto">
+        <div className="flex gap-2 ml-auto w-full sm:w-auto justify-start sm:justify-end">
           <button
             onClick={() => save(false)}
             className="
@@ -406,7 +429,7 @@ const FlowEditor = () => {
         </div>
       </div>
 
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1 }} className="min-h-[60vh]">
         <ReactFlow
           nodes={nodes} edges={edges}
           onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}

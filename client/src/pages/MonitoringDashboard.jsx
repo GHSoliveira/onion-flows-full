@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { apiRequest } from '../services/api';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Users, MessageSquare, Bot, Clock, Headset, Search, ListFilter, Activity,
+  Users, MessageSquare, Bot, Clock, Headset, Search, Activity,
   Eye, History, ArrowRightLeft, XCircle, X, User, AlertCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { SkeletonBox } from '../components/LoadingSkeleton';
 
 const MonitoringDashboard = () => {
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ const MonitoringDashboard = () => {
 
   const buildEndpoint = (baseEndpoint) => {
     const currentTenantId = getTenantId();
+    if (baseEndpoint.startsWith('/chats/')) return baseEndpoint;
     if (currentTenantId && !baseEndpoint.includes('/tenants/')) {
       return `/tenants/${currentTenantId}${baseEndpoint}`;
     }
@@ -51,7 +53,7 @@ const MonitoringDashboard = () => {
   const [filterAgent, setFilterAgent] = useState('ALL');
   const [searchClient, setSearchClient] = useState('');
 
-  const QUEUES = ["SUPORTE", "SAC", "COBRANÇA", "ALTERAÇÃO DE PLANO", "ATIVAÇÃO DE PLANO"];
+  const [queues, setQueues] = useState([]);
   const chatEndRef = useRef(null);
 
   const setViewChat = (chat) => {
@@ -84,14 +86,21 @@ const MonitoringDashboard = () => {
                 chats: chats,
                 agents: users.filter(u => ['AGENT', 'MANAGER', 'ADMIN'].includes(u.role))
               });
+
+              if (viewChatRef.current) {
+                const list = Array.isArray(chats) ? chats : [];
+                const updated = list.find(c => c.id === viewChatRef.current.id);
+                if (updated) setViewChatState(updated);
+              }
             }
           } else {
 
             setData(json);
           }
 
-          if (viewChatRef.current) {
-            const updated = json.chats?.find(c => c.id === viewChatRef.current.id);
+          if (!currentTenantId && viewChatRef.current) {
+            const list = Array.isArray(json?.chats) ? json.chats : [];
+            const updated = list.find(c => c.id === viewChatRef.current.id);
             if (updated) setViewChatState(updated);
           }
         }
@@ -101,6 +110,25 @@ const MonitoringDashboard = () => {
     fetchData();
     const interval = setInterval(fetchData, 3000);
     return () => clearInterval(interval);
+  }, [tenantId]);
+
+  useEffect(() => {
+    const fetchQueues = async () => {
+      try {
+        const currentTenantId = getTenantId();
+        const res = await apiRequest('/queues');
+        if (res && res.ok) {
+          const data = await res.json();
+          const filtered = currentTenantId
+            ? data.filter(q => q.tenantId === currentTenantId)
+            : data;
+          setQueues(filtered.map(q => q.name));
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchQueues();
   }, [tenantId]);
 
   useEffect(() => {
@@ -138,7 +166,7 @@ const MonitoringDashboard = () => {
     const qMatch = filterQueue === 'ALL' || c.queue === filterQueue;
     const aMatch = filterAgent === 'ALL' || c.agentName === filterAgent;
     const sMatch = searchClient === '' || (c.variables?.nome_cliente || '').toLowerCase().includes(searchClient.toLowerCase()) || (c.customerCpf || '').includes(searchClient);
-    return qMatch && aMatch && sMatch;
+    return qMatch && aMatch && sMatch && c.status !== 'closed';
   });
 
   const kpis = {
@@ -148,13 +176,50 @@ const MonitoringDashboard = () => {
     inService: data.chats.filter(c => c.status === 'open' && c.agentId).length
   };
 
-  if (loading) return <div className="flex justify-center p-10"><div className="w-8 h-8 border-4 border-blue-500 rounded-full animate-spin border-t-transparent"></div></div>;
+  if (loading) {
+    return (
+      <main className="p-3 sm:p-4 lg:p-6 space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="space-y-2">
+            <SkeletonBox className="h-6 w-48" />
+            <SkeletonBox className="h-4 w-72" />
+          </div>
+          <SkeletonBox className="h-10 w-full lg:w-52" />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={`metric_${index}`} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-3">
+              <SkeletonBox className="h-4 w-24" />
+              <SkeletonBox className="h-7 w-20" />
+              <SkeletonBox className="h-3 w-28" />
+            </div>
+          ))}
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-3">
+            <SkeletonBox className="h-4 w-32" />
+            {Array.from({ length: 6 }).map((_, index) => (
+              <SkeletonBox key={`chat_${index}`} className="h-10 w-full" />
+            ))}
+          </div>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-3">
+            <SkeletonBox className="h-4 w-28" />
+            {Array.from({ length: 5 }).map((_, index) => (
+              <SkeletonBox key={`agent_${index}`} className="h-10 w-full" />
+            ))}
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <div className="p-6 max-w-400 mx-auto space-y-6 h-[calc(100vh-60px)] flex flex-col">
+    <div className="p-3 sm:p-4 lg:p-6 max-w-400 mx-auto space-y-6 h-[calc(100vh-60px)] flex flex-col">
 
       {}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
             <Activity size={24} />
@@ -164,13 +229,10 @@ const MonitoringDashboard = () => {
             <p className="text-xs text-gray-500 dark:text-gray-400">Visão em tempo real da operação.</p>
           </div>
         </div>
-        <button onClick={() => navigate('/system-logs')} className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-200">
-          <ListFilter size={16} /> Ver Logs
-        </button>
       </div>
 
       {}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard title="Ativos" value={kpis.total} icon={MessageSquare} color="text-gray-500" />
         <KPICard title="No Bot" value={kpis.inBot} icon={Bot} color="text-blue-500" />
         <KPICard title="Fila" value={kpis.inQueue} icon={Clock} color="text-orange-500" />
@@ -178,10 +240,10 @@ const MonitoringDashboard = () => {
       </div>
 
       {}
-      <div className="grid grid-cols-12 gap-6 flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 flex-1 min-h-0">
 
         {}
-        <div className="col-span-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex flex-col overflow-hidden shadow-sm">
+        <div className="lg:col-span-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex flex-col overflow-hidden shadow-sm">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 font-semibold text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800/50">
             EQUIPES & AGENTES
           </div>
@@ -189,7 +251,7 @@ const MonitoringDashboard = () => {
           {}
           <div className="p-4 border-b border-gray-100 dark:border-gray-700 space-y-3">
             <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Filas em Tempo Real</div>
-            {QUEUES.map(q => {
+            {queues.map(q => {
               const count = data.chats.filter(c => c.queue === q).length;
               const wait = data.chats.filter(c => c.queue === q && c.status === 'waiting').length;
               return (
@@ -220,28 +282,28 @@ const MonitoringDashboard = () => {
         </div>
 
         {}
-        <div className="col-span-9 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex flex-col overflow-hidden shadow-sm">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
+        <div className="lg:col-span-9 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex flex-col overflow-hidden shadow-sm">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-gray-50 dark:bg-gray-800/50">
             <h3 className="font-semibold text-sm text-gray-700 dark:text-gray-200">PAINEL DE ATENDIMENTOS</h3>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-gray-400" />
                 <input
-                  className="pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none w-48"
+                  className="pl-9 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-48"
                   placeholder="Buscar..."
                   value={searchClient}
                   onChange={e => setSearchClient(e.target.value)}
                 />
               </div>
-              <select className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 px-2 py-1.5 outline-none" value={filterQueue} onChange={e => setFilterQueue(e.target.value)}>
+              <select className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 px-2 py-1.5 outline-none w-full sm:w-auto" value={filterQueue} onChange={e => setFilterQueue(e.target.value)}>
                 <option value="ALL">Todas Filas</option>
-                {QUEUES.map(q => <option key={q} value={q}>{q}</option>)}
+                {queues.map(q => <option key={q} value={q}>{q}</option>)}
               </select>
             </div>
           </div>
 
           <div className="flex-1 overflow-auto">
-            <table className="w-full text-sm text-left">
+            <table className="w-full text-sm text-left min-w-[700px]">
               <thead className="text-xs text-gray-500 uppercase bg-gray-50 dark:bg-gray-700 sticky top-0">
                 <tr>
                   <th className="px-6 py-3">Cliente</th>
@@ -325,7 +387,7 @@ const MonitoringDashboard = () => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nova Fila</label>
               <select className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700" onChange={e => { setTargetQueue(e.target.value); setTargetAgent(''); }}>
                 <option value="">Selecione...</option>
-                {QUEUES.map(q => <option key={q} value={q}>{q}</option>)}
+                {queues.map(q => <option key={q} value={q}>{q}</option>)}
               </select>
             </div>
 

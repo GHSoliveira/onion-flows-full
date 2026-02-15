@@ -41,3 +41,20 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb {
   @apply bg-slate-300 dark:bg-slate-700 rounded-full;
 }
+
+@media (max-width: 768px) {
+  .content {
+    padding: 1rem !important;
+  }
+
+  table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  th,
+  td {
+    white-space: nowrap;
+  }
+}

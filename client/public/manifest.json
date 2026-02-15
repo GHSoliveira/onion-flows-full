@@ -1,7 +1,7 @@
 {
-  "name": "FiberAdmin ChatBot",
-  "short_name": "FiberAdmin",
-  "description": "Plataforma de gestão de Chatbot SaaS",
+  "name": "Onion Flows",
+  "short_name": "Onion Flows",
+  "description": "Plataforma de gestao de Chatbot SaaS",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -9,16 +9,11 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icon-512.png",
+      "src": "/Onion_logo_root.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     }
   ]
 }
+

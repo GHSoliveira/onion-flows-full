@@ -11,13 +11,17 @@ import {
   LayoutTemplate
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTenant } from '../context/TenantContext';
+import { SkeletonBox } from '../components/LoadingSkeleton';
 
 const TemplateManager = () => {
   const [templates, setTemplates] = useState([]);
   const [name, setName] = useState('');
   const [text, setText] = useState('');
   const [buttons, setButtons] = useState([]);
+  const [scope, setScope] = useState('flow');
   const [loading, setLoading] = useState(true);
+  const { tenant } = useTenant();
 
   const fetchTemplates = async () => {
     try {
@@ -57,13 +61,21 @@ const TemplateManager = () => {
     if (buttons.some(b => !b.label.trim())) return toast.error("Preencha o texto de todos os botões.");
 
     try {
+      const payload = {
+        name,
+        text,
+        buttons,
+        scope,
+        tenantId: tenant && tenant.id !== 'super_admin' ? tenant.id : undefined
+      };
+
       const res = await apiRequest('/templates', {
         method: 'POST',
-        body: JSON.stringify({ name, text, buttons })
+        body: JSON.stringify(payload)
       });
 
       if (res && res.ok) {
-        setName(''); setText(''); setButtons([]);
+        setName(''); setText(''); setButtons([]); setScope('flow');
         fetchTemplates();
         toast.success("Modelo salvo com sucesso!");
       }
@@ -84,7 +96,7 @@ const TemplateManager = () => {
   };
 
   return (
-    <main className="content h-screen bg-gray-50 dark:bg-gray-900 p-6 flex flex-col overflow-hidden">
+    <main className="content min-h-screen bg-gray-50 dark:bg-gray-900 p-3 sm:p-4 lg:p-6 flex flex-col overflow-hidden">
 
       {}
       <div className="flex items-center gap-3 mb-6">
@@ -97,11 +109,11 @@ const TemplateManager = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 flex-1 min-h-0">
 
         {}
-        <div className="lg:col-span-5 flex flex-col gap-6 overflow-y-auto pr-2">
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+        <div className="lg:col-span-5 flex flex-col gap-6 overflow-y-auto lg:pr-2">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
               <Plus className="w-5 h-5 text-blue-500" />
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Novo Modelo</h2>
@@ -136,9 +148,22 @@ const TemplateManager = () => {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5">Escopo</label>
+                <select
+                  value={scope}
+                  onChange={e => setScope(e.target.value)}
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+                >
+                  <option value="flow">Fluxo (HSM)</option>
+                  <option value="root">Atendimento (root)</option>
+                </select>
+                <p className="mt-2 text-xs text-gray-500">Mensagens root aparecem como respostas rápidas para agentes.</p>
+              </div>
+
               {}
               <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                <div className="flex justify-between items-center mb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                   <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">BOTÕES ({buttons.length})</label>
                   <button
                     onClick={handleAddButton}
@@ -154,27 +179,27 @@ const TemplateManager = () => {
                     <span className="text-xs text-gray-400">Nenhum botão configurado</span>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {buttons.map((btn, index) => (
-                      <div key={btn.id} className="flex gap-2 items-center">
-                        <div className="flex-1 relative">
-                          <MousePointer2 size={14} className="absolute left-3 top-3 text-gray-400" />
-                          <input
-                            className="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md text-sm focus:border-blue-500 outline-none dark:text-white"
-                            placeholder={`Opção ${index + 1}`}
-                            value={btn.label}
-                            onChange={e => updateButtonLabel(index, e.target.value)}
-                          />
+                    <div className="space-y-2">
+                      {buttons.map((btn, index) => (
+                        <div key={btn.id} className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+                          <div className="flex-1 relative">
+                            <MousePointer2 size={14} className="absolute left-3 top-3 text-gray-400" />
+                            <input
+                              className="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md text-sm focus:border-blue-500 outline-none dark:text-white"
+                              placeholder={`Opção ${index + 1}`}
+                              value={btn.label}
+                              onChange={e => updateButtonLabel(index, e.target.value)}
+                            />
+                          </div>
+                          <button
+                            onClick={() => handleRemoveButton(btn.id)}
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors w-full sm:w-auto"
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </div>
-                        <button
-                          onClick={() => handleRemoveButton(btn.id)}
-                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
                 )}
               </div>
 
@@ -190,7 +215,7 @@ const TemplateManager = () => {
 
         {}
         <div className="lg:col-span-7 flex flex-col min-h-0 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-between items-center">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wide">Modelos Disponíveis</h3>
             <span className="text-xs text-gray-500 bg-white dark:bg-gray-700 px-2 py-1 rounded border border-gray-200 dark:border-gray-600">
               Total: {templates.length}
@@ -199,14 +224,30 @@ const TemplateManager = () => {
 
           <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
             {loading ? (
-              <div className="flex justify-center p-10"><div className="w-8 h-8 border-4 border-blue-500 rounded-full animate-spin border-t-transparent"></div></div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div key={`template_skel_${index}`} className="bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                      <SkeletonBox className="h-4 w-32" />
+                      <SkeletonBox className="h-3 w-24 mt-2" />
+                    </div>
+                    <div className="p-4 space-y-3">
+                      <SkeletonBox className="h-12 w-full" />
+                      <div className="flex flex-wrap gap-2">
+                        <SkeletonBox className="h-6 w-16 rounded-full" />
+                        <SkeletonBox className="h-6 w-20 rounded-full" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : templates.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-3 opacity-60">
                 <FileText size={48} />
                 <p>Nenhum modelo criado ainda.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {templates.map(t => (
                   <div key={t.id} className="group relative bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden hover:shadow-md transition-all hover:border-blue-300 dark:hover:border-blue-700">
 
@@ -216,13 +257,22 @@ const TemplateManager = () => {
                         <h4 className="font-semibold text-gray-900 dark:text-white text-sm">{t.name}</h4>
                         <span className="text-[10px] text-gray-400 font-mono">ID: {t.id}</span>
                       </div>
-                      <button
-                        onClick={() => handleDelete(t.id)}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all"
-                        title="Excluir"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                          t.scope === 'root'
+                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                        }`}>
+                          {t.scope === 'root' ? 'ROOT' : 'FLOW'}
+                        </span>
+                        <button
+                          onClick={() => handleDelete(t.id)}
+                          className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all"
+                          title="Excluir"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
 
                     {}

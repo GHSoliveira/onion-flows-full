@@ -10,9 +10,10 @@ import {
   CheckCircle2,
   AlertCircle,
   Calendar,
-  Loader2
+  Play
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { SkeletonBox } from '../components/LoadingSkeleton';
 
 const FlowList = () => {
   const [flows, setFlows] = useState([]);
@@ -23,10 +24,9 @@ const FlowList = () => {
   const fetchFlows = async () => {
     try {
       setLoading(true);
-      const data = await getJSON('/flows');
-      if (Array.isArray(data)) {
-        setFlows(data);
-      }
+      const data = await getJSON('/flows?limit=200&page=1');
+      const list = Array.isArray(data) ? data : (data?.items || []);
+      setFlows(list);
     } catch (error) {
       console.error("Erro ao buscar fluxos:", error);
       toast.error("Erro ao carregar fluxos");
@@ -75,16 +75,37 @@ const FlowList = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gray-50 dark:bg-gray-900">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-      </div>
+      <main className="p-3 sm:p-4 lg:p-6 max-w-7xl mx-auto space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-2">
+            <SkeletonBox className="h-6 w-56" />
+            <SkeletonBox className="h-4 w-72" />
+          </div>
+          <SkeletonBox className="h-10 w-full sm:w-40" />
+        </div>
+
+        <SkeletonBox className="h-12 w-full" />
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+          <div className="p-4 space-y-3">
+            <SkeletonBox className="h-4 w-64" />
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={`flow_row_${index}`} className="grid grid-cols-4 gap-4">
+                <SkeletonBox className="h-4 col-span-2" />
+                <SkeletonBox className="h-4" />
+                <SkeletonBox className="h-4" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </main>
     );
   }
 
   return (
-    <main className="p-6 max-w-7xl mx-auto space-y-6">
+    <main className="p-3 sm:p-4 lg:p-6 max-w-7xl mx-auto space-y-6">
 
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Workflow className="w-8 h-8 text-blue-600" /> Fluxos de Conversa
@@ -93,7 +114,7 @@ const FlowList = () => {
         </div>
         <button
           onClick={handleCreateFlow}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm w-full sm:w-auto"
         >
           <Plus size={18} /> Novo Fluxo
         </button>
@@ -113,7 +134,8 @@ const FlowList = () => {
 
       {}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
-        <table className="w-full text-sm text-left">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left min-w-[640px]">
           <thead className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 uppercase font-medium">
             <tr>
               <th className="px-6 py-3">Nome</th>
@@ -151,6 +173,13 @@ const FlowList = () => {
                   </td>
                   <td className="px-6 py-4 text-right flex justify-end gap-2">
                     <button
+                      onClick={() => navigate(`/simulator?flowId=${flow.id}`)}
+                      className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                      title="Simular Fluxo"
+                    >
+                      <Play size={16} />
+                    </button>
+                    <button
                       onClick={() => navigate(`/editor/${flow.id}`)}
                       className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                       title="Editar"
@@ -169,7 +198,8 @@ const FlowList = () => {
               ))
             )}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
     </main>
   );

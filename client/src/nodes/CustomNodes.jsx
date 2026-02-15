@@ -4,7 +4,7 @@ import {
     Play, Square, MessageSquare, TextCursorInput,
     Database, Split, Anchor, ArrowRight, Code,
     Globe, Hourglass, Users, Clock, FileText,
-    X, Flag, GitBranch
+    X, Flag, GitBranch, Star
 } from 'lucide-react';
 
 
@@ -123,6 +123,9 @@ export const DelayNode = (props) => <CompactNode {...props} icon={Hourglass} col
 export const AnchorNode = (props) => <CompactNode {...props} icon={Anchor} color="#db2777" label="Âncora" />;
 export const GotoNode = (props) => <CompactNode {...props} icon={ArrowRight} color="#db2777" label="Ir Para" outputs={[]} />;
 export const QueueNode = (props) => <CompactNode {...props} icon={Users} color="#ea580c" label="Fila" />;
+export const RatingNode = (props) => (
+    <CompactNode {...props} icon={Star} color="#fbbf24" label="Nota" />
+);
 
 export const HttpRequestNode = (props) => (
     <CompactNode
