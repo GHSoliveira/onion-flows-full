@@ -9,6 +9,7 @@ import { JWT_SECRET_VALUE, JWT_EXPIRES_IN } from '../config/constants.js';
 import { markOnline } from '../services/userStatus.js';
 
 const router = express.Router();
+const HEARTBEAT_LAST_SEEN_MIN_MS = Number.parseInt(process.env.HEARTBEAT_LAST_SEEN_MIN_MS || '60000', 10);
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -42,10 +43,6 @@ router.post('/login', loginLimiter, async (req, res) => {
     user.status = 'online';
     user.lastSeen = new Date().toISOString();
     await adapter.saveCollection('users', users);
-
-    user.status = 'online';
-    user.lastSeen = new Date().toISOString();
-    await adapter.saveCollection('users', users);
     markOnline(user.id);
 
     const token = jwt.sign(
@@ -71,10 +68,20 @@ router.get('/heartbeat', authenticate, async (req, res) => {
     const users = await adapter.getCollection('users');
     const stored = users.find(u => u.id === user.id);
     if (stored) {
-      stored.status = 'online';
-      stored.lastSeen = new Date().toISOString();
-      await adapter.saveCollection('users', users);
+      const now = Date.now();
+      const lastSeenMs = stored.lastSeen ? new Date(stored.lastSeen).getTime() : 0;
+      const shouldPersistLastSeen =
+        !Number.isFinite(lastSeenMs) ||
+        now - lastSeenMs >= HEARTBEAT_LAST_SEEN_MIN_MS ||
+        stored.status !== 'online';
+
+      if (shouldPersistLastSeen) {
+        stored.status = 'online';
+        stored.lastSeen = new Date(now).toISOString();
+        await adapter.saveCollection('users', users);
+      }
     }
+    markOnline(user.id);
 
     res.json({
       valid: true,

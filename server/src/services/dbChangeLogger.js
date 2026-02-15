@@ -12,6 +12,20 @@ const safeStringifyId = (id) => {
   }
 };
 
+const isHeartbeatOnlyUserUpdate = (operationType, collection, updateDescription) => {
+  if (operationType !== 'update' || collection !== 'users') return false;
+
+  const updatedFields = updateDescription?.updatedFields || {};
+  const removedFields = updateDescription?.removedFields || [];
+  const keys = Object.keys(updatedFields);
+
+  if (keys.length === 0) return false;
+  if (removedFields.length > 0) return false;
+
+  const allowedFields = new Set(['lastSeen', 'status']);
+  return keys.every((key) => allowedFields.has(key));
+};
+
 export const startDbChangeLogger = async () => {
   try {
     if (!adapter.db) await adapter.init();
@@ -30,8 +44,15 @@ export const startDbChangeLogger = async () => {
     changeStream.on('change', async (change) => {
       try {
         const { operationType, ns, documentKey, fullDocument, updateDescription } = change || {};
+        const collection = ns?.coll || 'unknown';
+
+        // Skip noisy heartbeat updates to avoid log spam and extra IO.
+        if (isHeartbeatOnlyUserUpdate(operationType, collection, updateDescription)) {
+          return;
+        }
+
         const payload = {
-          collection: ns?.coll || 'unknown',
+          collection,
           operation: operationType || 'unknown',
           documentKey: safeStringifyId(documentKey?._id || documentKey),
           tenantId: fullDocument?.tenantId || null,
