@@ -10,7 +10,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
-// Carregar variáveis de ambiente do arquivo .env local
+
 dotenv.config({ path: './.env' });
 
 import adapter from './db/DatabaseAdapter.js';
@@ -58,7 +58,7 @@ const apiLimiter = rateLimit({
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 50, // Aumentado para debug
+  max: 50,
   message: { error: 'Muitas tentativas de login' }
 });
 
@@ -116,7 +116,7 @@ const scheduleSchema = z.object({
 
 const createLog = async (type, message, userId = 'system') => {
   const logMessage = typeof message === 'object' ? JSON.stringify(message) : String(message || '');
-  
+
   const newLog = {
     id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
     timestamp: new Date().toISOString(),
@@ -128,13 +128,13 @@ const createLog = async (type, message, userId = 'system') => {
   try {
     let systemLogs = await adapter.getCollection('systemLogs');
     if (!systemLogs) systemLogs = [];
-    
+
     systemLogs.unshift(newLog);
     if (systemLogs.length > 500) systemLogs = systemLogs.slice(0, 500);
-    
+
     await adapter.saveCollection('systemLogs', systemLogs);
     console.log(`[LOG] ${type}: ${logMessage}`);
-    
+
     if (typeof io !== 'undefined') {
       io.emit('new_log', newLog);
     }
@@ -146,7 +146,7 @@ const createLog = async (type, message, userId = 'system') => {
 const authenticate = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
-  
+
   if (!token) return res.status(401).json({ error: "Token ausente" });
 
   try {
@@ -192,7 +192,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// System Logs Endpoint
+
 app.get('/api/logs', authenticate, async (req, res) => {
   try {
     const logs = await adapter.getCollection('systemLogs');
@@ -202,14 +202,14 @@ app.get('/api/logs', authenticate, async (req, res) => {
   }
 });
 
-// Super Admin Dashboard Endpoint
+
 app.get('/api/super-admin/dashboard', authenticate, async (req, res) => {
   try {
     if (req.user.role !== 'SUPER_ADMIN') {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
-    // Buscar todos os dados
+
     const [tenants, users, flows, activeChats] = await Promise.all([
       adapter.getCollection('tenants'),
       adapter.getCollection('users'),
@@ -217,7 +217,7 @@ app.get('/api/super-admin/dashboard', authenticate, async (req, res) => {
       adapter.getCollection('activeChats')
     ]);
 
-    // Calcular métricas
+
     const metrics = {
       tenants: {
         total: tenants.length,
@@ -287,7 +287,7 @@ app.get('/api/tenants', async (req, res) => {
 app.post('/api/auth/login', loginLimiter, async (req, res) => {
   try {
     const { username, password } = loginSchema.parse(req.body);
-    
+
     const users = await adapter.getCollection('users');
     let user = users.find(u => u.username === username);
 
@@ -318,12 +318,12 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
   }
 });
 
-// Heartbeat Endpoint
+
 app.get('/api/auth/heartbeat', authenticate, async (req, res) => {
   try {
     const tenantId = req.query.tenantId;
     const user = req.user;
-    
+
     res.json({
       valid: true,
       user: {
@@ -339,7 +339,7 @@ app.get('/api/auth/heartbeat', authenticate, async (req, res) => {
   }
 });
 
-// Get Users by Tenant Endpoint
+
 app.get('/api/tenants/:tenantId/users', authenticate, async (req, res) => {
   try {
     const { tenantId } = req.params;
@@ -391,7 +391,7 @@ app.post('/api/tenants', authenticate, async (req, res) => {
   }
 });
 
-// Switch Tenant Endpoint
+
 app.post('/api/tenants/:tenantId/switch', authenticate, async (req, res) => {
   try {
     if (req.user.role !== 'SUPER_ADMIN') {
@@ -429,16 +429,16 @@ app.get('/api/users', authenticate, requireTenant, async (req, res) => {
 app.post('/api/users', authenticate, authorize(['ADMIN', 'SUPER_ADMIN']), async (req, res) => {
   try {
     const { name, username, password, role, queues, tenantId: bodyTenantId } = userSchema.parse(req.body);
-    
+
     const tenantId = req.user.role === 'SUPER_ADMIN' ? (bodyTenantId || req.user.tenantId) : req.user.tenantId;
-    
+
 if (!tenantId && req.user.role !== 'SUPER_ADMIN') {
       return res.status(400).json({ error: 'Administrador deve pertencer a nenhum tenant' });
     }
 
-    // Buscar apenas usuários DO TENANT atual
+
     const users = await adapter.getCollection('users', tenantId);
-    
+
     if (users.find(u => u.username === username)) {
       return res.status(400).json({ error: 'Username já está em uso' });
     }
@@ -457,7 +457,7 @@ if (!tenantId && req.user.role !== 'SUPER_ADMIN') {
       createdBy: req.user.id
     };
 
-    console.log('[USER CREATE] Salvando usuário:', user); // Debug
+    console.log('[USER CREATE] Salvando usuário:', user);
 
     users.push(user);
     await adapter.saveCollection('users', users);
@@ -477,9 +477,9 @@ app.delete('/api/users/:id', authenticate, authorize(['ADMIN', 'SUPER_ADMIN']), 
   try {
     const users = await adapter.getCollection('users', req.tenantId);
     const index = users.findIndex(u => u.id === req.params.id);
-    
+
     if (index === -1) return res.status(404).json({ error: 'Usuário não encontrado' });
-    
+
     if (req.user.role !== 'SUPER_ADMIN' && users[index].tenantId !== req.tenantId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
@@ -504,16 +504,16 @@ app.get('/api/flows', authenticate, requireTenant, async (req, res) => {
   }
 });
 
-// Get Flow by ID (busca por ID sem filtro de tenant)
+
 app.get('/api/flows/:id', authenticate, async (req, res) => {
   try {
     const allFlows = await adapter.getCollection('flows');
     const flow = allFlows.find(f => f.id === req.params.id);
-    
+
     if (!flow) {
       return res.status(404).json({ error: 'Fluxo não encontrado' });
     }
-    
+
     res.json(flow);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -523,7 +523,7 @@ app.get('/api/flows/:id', authenticate, async (req, res) => {
 app.post('/api/flows', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']), requireTenant, async (req, res) => {
   try {
     const data = flowSchema.parse(req.body);
-    
+
     const flow = {
       id: `f_${Date.now()}`,
       name: data.name,
@@ -540,15 +540,15 @@ app.post('/api/flows', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN
       },
       published: null
     };
-    
-    // Usar upsert direto em vez de buscar todos e sobrescrever
+
+
     const collection = adapter.db.collection('flows');
     await collection.updateOne(
       { id: flow.id },
       { $set: flow },
       { upsert: true }
     );
-    
+
     await createLog('FLOW_ACTION', `Fluxo criado: ${flow.name}`, req.user.id, req.tenantId);
     res.status(201).json(flow);
   } catch (error) {
@@ -564,7 +564,7 @@ app.put('/api/flows/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_AD
     const { nodes, edges, status, name, description } = req.body;
     const flows = await adapter.getCollection('flows', req.tenantId);
     const index = flows.findIndex(f => f.id === req.params.id);
-    
+
     if (index === -1) return res.status(404).json({ error: 'Fluxo não encontrado' });
 
     if (req.user.role !== 'SUPER_ADMIN' && flows[index].tenantId !== req.tenantId) {
@@ -594,9 +594,9 @@ app.delete('/api/flows/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER
   try {
     const flows = await adapter.getCollection('flows', req.tenantId);
     const index = flows.findIndex(f => f.id === req.params.id);
-    
+
     if (index === -1) return res.status(404).json({ error: 'Fluxo não encontrado' });
-    
+
     if (req.user.role !== 'SUPER_ADMIN' && flows[index].tenantId !== req.tenantId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
@@ -622,7 +622,7 @@ app.get('/api/variables', authenticate, requireTenant, async (req, res) => {
 app.post('/api/variables', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']), requireTenant, async (req, res) => {
   try {
     const data = variableSchema.parse(req.body);
-    
+
     const variable = {
       id: `var_${Date.now()}`,
       ...data,
@@ -630,7 +630,7 @@ app.post('/api/variables', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_A
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    
+
     const variables = await adapter.getCollection('variables');
     variables.push(variable);
     await adapter.saveCollection('variables', variables);
@@ -647,9 +647,9 @@ app.put('/api/variables/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPE
   try {
     const variables = await adapter.getCollection('variables', req.tenantId);
     const index = variables.findIndex(v => v.id === req.params.id);
-    
+
     if (index === -1) return res.status(404).json({ error: 'Variável não encontrada' });
-    
+
     if (req.user.role !== 'SUPER_ADMIN' && variables[index].tenantId !== req.tenantId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
@@ -666,9 +666,9 @@ app.delete('/api/variables/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'S
   try {
     const variables = await adapter.getCollection('variables', req.tenantId);
     const index = variables.findIndex(v => v.id === req.params.id);
-    
+
     if (index === -1) return res.status(404).json({ error: 'Variável não encontrada' });
-    
+
     if (req.user.role !== 'SUPER_ADMIN' && variables[index].tenantId !== req.tenantId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
@@ -693,7 +693,7 @@ app.get('/api/templates', authenticate, requireTenant, async (req, res) => {
 app.post('/api/templates', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']), requireTenant, async (req, res) => {
   try {
     const data = templateSchema.parse(req.body);
-    
+
     const template = {
       id: `tpl_${Date.now()}`,
       ...data,
@@ -701,7 +701,7 @@ app.post('/api/templates', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_A
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    
+
     const templates = await adapter.getCollection('messageTemplates');
     templates.push(template);
     await adapter.saveCollection('messageTemplates', templates);
@@ -718,9 +718,9 @@ app.delete('/api/templates/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'S
   try {
     const templates = await adapter.getCollection('messageTemplates', req.tenantId);
     const index = templates.findIndex(t => t.id === req.params.id);
-    
+
     if (index === -1) return res.status(404).json({ error: 'Template não encontrado' });
-    
+
     if (req.user.role !== 'SUPER_ADMIN' && templates[index].tenantId !== req.tenantId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
@@ -745,7 +745,7 @@ app.get('/api/schedules', authenticate, requireTenant, async (req, res) => {
 app.post('/api/schedules', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']), requireTenant, async (req, res) => {
   try {
     const data = scheduleSchema.parse(req.body);
-    
+
     const schedule = {
       id: `sch_${Date.now()}`,
       ...data,
@@ -753,7 +753,7 @@ app.post('/api/schedules', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_A
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    
+
     const schedules = await adapter.getCollection('schedules');
     schedules.push(schedule);
     await adapter.saveCollection('schedules', schedules);
@@ -778,7 +778,7 @@ app.get('/api/cannedResponses', authenticate, authorize(['ADMIN', 'MANAGER', 'SU
 app.post('/api/cannedResponses', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']), requireTenant, async (req, res) => {
   try {
     const { name, message, shortcut } = req.body;
-    
+
     const response = {
       id: `cr_${Date.now()}`,
       name,
@@ -788,7 +788,7 @@ app.post('/api/cannedResponses', authenticate, authorize(['ADMIN', 'MANAGER', 'S
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    
+
     const responses = await adapter.getCollection('cannedResponses');
     responses.push(response);
     await adapter.saveCollection('cannedResponses', responses);
@@ -803,13 +803,13 @@ app.put('/api/cannedResponses/:id', authenticate, authorize(['ADMIN', 'MANAGER',
     const { name, message, shortcut } = req.body;
     const responses = await adapter.getCollection('cannedResponses');
     const index = responses.findIndex(r => r.id === req.params.id);
-    
+
     if (index === -1) return res.status(404).json({ error: 'Canned Response não encontrado' });
-    
+
     if (req.user.role !== 'SUPER_ADMIN' && responses[index].tenantId !== req.tenantId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-    
+
     responses[index] = { ...responses[index], name, message, shortcut, updatedAt: new Date().toISOString() };
     await adapter.saveCollection('cannedResponses', responses);
     res.json(responses[index]);
@@ -822,13 +822,13 @@ app.delete('/api/cannedResponses/:id', authenticate, authorize(['ADMIN', 'MANAGE
   try {
     const responses = await adapter.getCollection('cannedResponses');
     const index = responses.findIndex(r => r.id === req.params.id);
-    
+
     if (index === -1) return res.status(404).json({ error: 'Canned Response não encontrado' });
-    
+
     if (req.user.role !== 'SUPER_ADMIN' && responses[index].tenantId !== req.tenantId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-    
+
     const deleted = responses.splice(index, 1)[0];
     await adapter.saveCollection('cannedResponses', responses);
     res.json({ message: 'Canned Response removido', deleted });
@@ -849,7 +849,7 @@ app.get('/api/tags', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']
 app.post('/api/tags', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']), requireTenant, async (req, res) => {
   try {
     const { name, color } = req.body;
-    
+
     const tag = {
       id: `tag_${Date.now()}`,
       name,
@@ -858,7 +858,7 @@ app.post('/api/tags', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN'
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    
+
     const tags = await adapter.getCollection('tags');
     tags.push(tag);
     await adapter.saveCollection('tags', tags);
@@ -873,13 +873,13 @@ app.put('/api/tags/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADM
     const { name, color } = req.body;
     const tags = await adapter.getCollection('tags');
     const index = tags.findIndex(t => t.id === req.params.id);
-    
+
     if (index === -1) return res.status(404).json({ error: 'Tag não encontrada' });
-    
+
     if (req.user.role !== 'SUPER_ADMIN' && tags[index].tenantId !== req.tenantId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-    
+
     tags[index] = { ...tags[index], name, color, updatedAt: new Date().toISOString() };
     await adapter.saveCollection('tags', tags);
     res.json(tags[index]);
@@ -892,13 +892,13 @@ app.delete('/api/tags/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_
   try {
     const tags = await adapter.getCollection('tags');
     const index = tags.findIndex(t => t.id === req.params.id);
-    
+
     if (index === -1) return res.status(404).json({ error: 'Tag não encontrada' });
-    
+
     if (req.user.role !== 'SUPER_ADMIN' && tags[index].tenantId !== req.tenantId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-    
+
     const deleted = tags.splice(index, 1)[0];
     await adapter.saveCollection('tags', tags);
     res.json({ message: 'Tag removida', deleted });
@@ -919,7 +919,7 @@ app.get('/api/webhooks', authenticate, authorize(['ADMIN', 'SUPER_ADMIN']), requ
 app.post('/api/webhooks', authenticate, authorize(['ADMIN', 'SUPER_ADMIN']), requireTenant, async (req, res) => {
   try {
     const { name, url, events, secret } = req.body;
-    
+
     const webhook = {
       id: `wh_${Date.now()}`,
       name,
@@ -930,7 +930,7 @@ app.post('/api/webhooks', authenticate, authorize(['ADMIN', 'SUPER_ADMIN']), req
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    
+
     const webhooks = await adapter.getCollection('webhooks');
     webhooks.push(webhook);
     await adapter.saveCollection('webhooks', webhooks);
@@ -945,13 +945,13 @@ app.put('/api/webhooks/:id', authenticate, authorize(['ADMIN', 'SUPER_ADMIN']), 
     const { name, url, events, secret } = req.body;
     const webhooks = await adapter.getCollection('webhooks');
     const index = webhooks.findIndex(w => w.id === req.params.id);
-    
+
     if (index === -1) return res.status(404).json({ error: 'Webhook não encontrado' });
-    
+
     if (req.user.role !== 'SUPER_ADMIN' && webhooks[index].tenantId !== req.tenantId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-    
+
     webhooks[index] = { ...webhooks[index], name, url, events, secret, updatedAt: new Date().toISOString() };
     await adapter.saveCollection('webhooks', webhooks);
     res.json(webhooks[index]);
@@ -964,13 +964,13 @@ app.delete('/api/webhooks/:id', authenticate, authorize(['ADMIN', 'SUPER_ADMIN']
   try {
     const webhooks = await adapter.getCollection('webhooks');
     const index = webhooks.findIndex(w => w.id === req.params.id);
-    
+
     if (index === -1) return res.status(404).json({ error: 'Webhook não encontrado' });
-    
+
     if (req.user.role !== 'SUPER_ADMIN' && webhooks[index].tenantId !== req.tenantId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-    
+
     const deleted = webhooks.splice(index, 1)[0];
     await adapter.saveCollection('webhooks', webhooks);
     res.json({ message: 'Webhook removido', deleted });
@@ -992,13 +992,13 @@ app.get('/api/chats/:id', authenticate, requireTenant, async (req, res) => {
   try {
     const chats = await adapter.getCollection('activeChats');
     const chat = chats.find(c => c.id === req.params.id);
-    
+
     if (!chat) return res.status(404).json({ error: 'Chat não encontrado' });
-    
+
     if (req.user.role !== 'SUPER_ADMIN' && chat.tenantId !== req.tenantId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-    
+
     res.json(chat);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -1018,15 +1018,15 @@ app.post('/api/queues', authenticate, authorize(['ADMIN']), async (req, res) => 
   try {
     const { name, color } = req.body;
     if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
-    
-    const newQueue = { 
+
+    const newQueue = {
       id: `q_${Date.now()}`,
-      name: name.toUpperCase(), 
+      name: name.toUpperCase(),
       color: color || '#3b82f6',
       tenantId: req.user.tenantId,
       createdAt: new Date().toISOString()
     };
-    
+
     const queues = await adapter.getCollection('queues');
     queues.push(newQueue);
     await adapter.saveCollection('queues', queues);

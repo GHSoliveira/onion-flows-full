@@ -1,14 +1,14 @@
-// API Simplificado - direto no backend
-const BASE_URL = 'http://localhost:3001/api'; // Bypass proxy
+
+const BASE_URL = 'http://localhost:3001/api';
 const FALLBACK_URL = 'http://localhost:3001/api';
 
-// Helper para obter tenantId do localStorage
+
 const getTenantId = () => {
     try {
         const savedTenant = localStorage.getItem('selectedTenant');
         if (savedTenant) {
             const parsed = JSON.parse(savedTenant);
-            // Não enviar tenantId se for 'super_admin' (acesso global)
+
             if (parsed.id && parsed.id !== 'super_admin') {
                 return parsed.id;
             }
@@ -19,10 +19,10 @@ const getTenantId = () => {
     return null;
 };
 
-// API Simplificado - sem complexidade
+
 export const apiRequest = async (endpoint, options = {}) => {
     const token = localStorage.getItem('token');
-    
+
     const headers = {
         'Content-Type': 'application/json',
         ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -30,11 +30,11 @@ export const apiRequest = async (endpoint, options = {}) => {
     };
 
     let url = `${BASE_URL}${endpoint}`;
-    
-    // Não adicionar tenantId para rotas de auth/login
+
+
     const isLoginEndpoint = endpoint.includes('/auth/login');
-    
-    // Adicionar tenantId se existir tenant selecionado E não for login
+
+
     if (!isLoginEndpoint) {
         const tenantId = getTenantId();
         if (tenantId) {
@@ -70,12 +70,12 @@ export const postJSON = async (endpoint, body) => {
         method: 'POST',
         body: JSON.stringify(body)
     });
-    // Adicione esta verificação para evitar erro se res for null (401)
-    if (!res) return null; 
+
+    if (!res) return null;
     return res.json();
 };
 
-// --- HELPERS PARA FACILITAR O USO (JSON) ---
+
 
 export const getJSON = async (endpoint) => {
     const res = await apiRequest(endpoint);

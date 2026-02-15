@@ -9,16 +9,16 @@ const ScheduleManager = () => {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Estado do Formulário
+
   const [name, setName] = useState('');
   const [rules, setRules] = useState(
     DAYS.reduce((acc, day, index) => ({
       ...acc,
-      [day]: { active: index < 5, start: '08:00', end: '18:00' } // Padrão: Seg-Sex ativos
+      [day]: { active: index < 5, start: '08:00', end: '18:00' }
     }), {})
   );
 
-  // Bulk Edit (Editar vários ao mesmo tempo)
+
   const [bulkStart, setBulkStart] = useState('08:00');
   const [bulkEnd, setBulkEnd] = useState('18:00');
 
@@ -29,7 +29,7 @@ const ScheduleManager = () => {
   const fetchSchedules = async () => {
     try {
       setLoading(true);
-      // O getJSON já trata a URL base e o Token
+
       const data = await getJSON('/schedules');
       if (Array.isArray(data)) {
         setSchedules(data);
@@ -45,7 +45,7 @@ const ScheduleManager = () => {
     if (!name.trim()) return toast.error("Defina um nome para o grupo.");
 
     try {
-      // DEBUG: Verifique no console o que está sendo enviado
+
       console.log("Enviando schedule:", { name, rules });
 
       const newSchedule = await postJSON('/schedules', { name, rules });
@@ -54,7 +54,7 @@ const ScheduleManager = () => {
         toast.success("Grupo de horário salvo!");
         setSchedules([...schedules, newSchedule]);
         setName('');
-        // Reset seguro
+
         setRules(DAYS.reduce((acc, day, index) => ({
           ...acc, [day]: { active: index < 5, start: '08:00', end: '18:00' }
         }), {}));
@@ -76,7 +76,7 @@ const ScheduleManager = () => {
     }
   };
 
-  // Aplica horário em massa para dias ativos
+
   const applyBulk = () => {
     const newRules = { ...rules };
     Object.keys(newRules).forEach(day => {
@@ -100,7 +100,7 @@ const ScheduleManager = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
 
-      {/* Header */}
+      {}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <Calendar className="w-8 h-8 text-blue-600" />
@@ -111,7 +111,7 @@ const ScheduleManager = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-        {/* --- COLUNA ESQUERDA: EDITOR (4 colunas) --- */}
+        {}
         <div className="lg:col-span-5 space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -129,7 +129,7 @@ const ScheduleManager = () => {
                 />
               </div>
 
-              {/* Ferramenta de Edição Rápida */}
+              {}
               <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800/30">
                 <label className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase mb-2 block">Aplicar em massa (Dias ativos)</label>
                 <div className="flex items-center gap-2">
@@ -140,7 +140,7 @@ const ScheduleManager = () => {
                 </div>
               </div>
 
-              {/* Lista de Dias */}
+              {}
               <div className="space-y-2 border-t border-gray-100 dark:border-gray-700 pt-4">
                 {DAYS.map(day => (
                   <div key={day} className={`flex items-center justify-between p-2 rounded-lg border transition-colors ${rules[day].active ? 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600' : 'bg-gray-50 dark:bg-gray-800/50 border-transparent opacity-60'}`}>
@@ -187,7 +187,7 @@ const ScheduleManager = () => {
           </div>
         </div>
 
-        {/* --- COLUNA DIREITA: LISTA (7 colunas) --- */}
+        {}
         <div className="lg:col-span-7">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {schedules.length === 0 ? (

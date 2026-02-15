@@ -13,7 +13,7 @@ const MonitoringDashboard = () => {
   const [data, setData] = useState({ chats: [], agents: [] });
   const [loading, setLoading] = useState(true);
 
-  // Obter tenantId - da URL ou do localStorage
+
   const getTenantId = () => {
     if (tenantId) return tenantId;
     try {
@@ -26,7 +26,7 @@ const MonitoringDashboard = () => {
     return null;
   };
 
-  // Helper para construir endpoint com tenantId
+
   const buildEndpoint = (baseEndpoint) => {
     const currentTenantId = getTenantId();
     if (currentTenantId && !baseEndpoint.includes('/tenants/')) {
@@ -35,18 +35,18 @@ const MonitoringDashboard = () => {
     return baseEndpoint;
   };
 
-  // Modais
+
   const [viewChat, setViewChatState] = useState(null);
   const viewChatRef = useRef(null);
   const [transferChat, setTransferChat] = useState(null);
   const [historyChat, setHistoryChat] = useState(null);
   const [clientHistory, setClientHistory] = useState([]);
 
-  // Transferência
+
   const [targetQueue, setTargetQueue] = useState('');
   const [targetAgent, setTargetAgent] = useState('');
 
-  // Filtros
+
   const [filterQueue, setFilterQueue] = useState('ALL');
   const [filterAgent, setFilterAgent] = useState('ALL');
   const [searchClient, setSearchClient] = useState('');
@@ -62,31 +62,31 @@ const MonitoringDashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       const currentTenantId = getTenantId();
-      const endpoint = currentTenantId 
-        ? `/tenants/${currentTenantId}/analytics` 
+      const endpoint = currentTenantId
+        ? `/tenants/${currentTenantId}/analytics`
         : '/monitoring/overview';
-      
+
       try {
         const res = await apiRequest(endpoint);
         if (res && res.ok) {
           const json = await res.json();
-          
-          // Se for analytics do tenant, precisamos buscar chats separadamente
+
+
           if (currentTenantId) {
             const chatsRes = await apiRequest(`/tenants/${currentTenantId}/chats`);
             if (chatsRes && chatsRes.ok) {
               const chats = await chatsRes.json();
-              // Buscar usuários para obter agentes
+
               const usersRes = await apiRequest(`/tenants/${currentTenantId}/users`);
               const users = usersRes && usersRes.ok ? await usersRes.json() : [];
-              
+
               setData({
                 chats: chats,
                 agents: users.filter(u => ['AGENT', 'MANAGER', 'ADMIN'].includes(u.role))
               });
             }
           } else {
-            // Fallback para dados globais
+
             setData(json);
           }
 
@@ -153,7 +153,7 @@ const MonitoringDashboard = () => {
   return (
     <div className="p-6 max-w-400 mx-auto space-y-6 h-[calc(100vh-60px)] flex flex-col">
 
-      {/* Header */}
+      {}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
@@ -169,7 +169,7 @@ const MonitoringDashboard = () => {
         </button>
       </div>
 
-      {/* KPIs */}
+      {}
       <div className="grid grid-cols-4 gap-4">
         <KPICard title="Ativos" value={kpis.total} icon={MessageSquare} color="text-gray-500" />
         <KPICard title="No Bot" value={kpis.inBot} icon={Bot} color="text-blue-500" />
@@ -177,16 +177,16 @@ const MonitoringDashboard = () => {
         <KPICard title="Humanos" value={kpis.inService} icon={Headset} color="text-green-500" />
       </div>
 
-      {/* Grid Principal */}
+      {}
       <div className="grid grid-cols-12 gap-6 flex-1 min-h-0">
 
-        {/* Coluna Esquerda: Equipes (3 cols) */}
+        {}
         <div className="col-span-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex flex-col overflow-hidden shadow-sm">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 font-semibold text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800/50">
             EQUIPES & AGENTES
           </div>
 
-          {/* Filas */}
+          {}
           <div className="p-4 border-b border-gray-100 dark:border-gray-700 space-y-3">
             <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Filas em Tempo Real</div>
             {QUEUES.map(q => {
@@ -204,7 +204,7 @@ const MonitoringDashboard = () => {
             })}
           </div>
 
-          {/* Agentes */}
+          {}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             <div className="text-xs font-bold text-gray-400 uppercase tracking-wider sticky top-0 bg-white dark:bg-gray-800 pb-2">Agentes Online ({data.agents.filter(a => a.isOnline).length})</div>
             {data.agents.map(a => (
@@ -219,7 +219,7 @@ const MonitoringDashboard = () => {
           </div>
         </div>
 
-        {/* Coluna Direita: Tabela (9 cols) */}
+        {}
         <div className="col-span-9 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex flex-col overflow-hidden shadow-sm">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
             <h3 className="font-semibold text-sm text-gray-700 dark:text-gray-200">PAINEL DE ATENDIMENTOS</h3>
@@ -284,7 +284,7 @@ const MonitoringDashboard = () => {
         </div>
       </div>
 
-      {/* MODAL VIEW */}
+      {}
       {viewChat && (
         <Modal onClose={() => setViewChat(null)} title={`Monitorando: ${viewChat.variables?.nome_cliente || 'Anônimo'}`}>
           <div className="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 flex-1 overflow-y-auto p-4 space-y-3 h-100">
@@ -313,7 +313,7 @@ const MonitoringDashboard = () => {
         </Modal>
       )}
 
-      {/* MODAL TRANSFER */}
+      {}
       {transferChat && (
         <Modal onClose={() => setTransferChat(null)} title="Transferir Atendimento">
           <div className="space-y-4">
@@ -345,7 +345,7 @@ const MonitoringDashboard = () => {
         </Modal>
       )}
 
-      {/* MODAL HISTORY */}
+      {}
       {historyChat && (
         <Modal onClose={() => setHistoryChat(null)} title={`Histórico: ${historyChat}`}>
           <div className="space-y-4 max-h-100 overflow-y-auto">
@@ -374,7 +374,7 @@ const MonitoringDashboard = () => {
   );
 };
 
-// Componentes Auxiliares
+
 const KPICard = ({ title, value, icon: Icon, color }) => (
   <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center justify-between">
     <div>

@@ -86,7 +86,7 @@ const TemplateManager = () => {
   return (
     <main className="content h-screen bg-gray-50 dark:bg-gray-900 p-6 flex flex-col overflow-hidden">
 
-      {/* Header */}
+      {}
       <div className="flex items-center gap-3 mb-6">
         <div className="p-2 bg-pink-100 dark:bg-pink-900/30 rounded-lg text-pink-600 dark:text-pink-400">
           <LayoutTemplate size={24} />
@@ -99,7 +99,7 @@ const TemplateManager = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 min-h-0">
 
-        {/* --- COLUNA ESQUERDA: EDITOR (5 colunas) --- */}
+        {}
         <div className="lg:col-span-5 flex flex-col gap-6 overflow-y-auto pr-2">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
@@ -108,7 +108,7 @@ const TemplateManager = () => {
             </div>
 
             <div className="space-y-5">
-              {/* Nome */}
+              {}
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5">Identificador Interno</label>
                 <input
@@ -119,7 +119,7 @@ const TemplateManager = () => {
                 />
               </div>
 
-              {/* Mensagem */}
+              {}
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5">Corpo da Mensagem</label>
                 <div className="relative">
@@ -136,7 +136,7 @@ const TemplateManager = () => {
                 </div>
               </div>
 
-              {/* Botões */}
+              {}
               <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                 <div className="flex justify-between items-center mb-3">
                   <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">BOTÕES ({buttons.length})</label>
@@ -188,7 +188,7 @@ const TemplateManager = () => {
           </div>
         </div>
 
-        {/* --- COLUNA DIREITA: LISTA (7 colunas) --- */}
+        {}
         <div className="lg:col-span-7 flex flex-col min-h-0 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-between items-center">
             <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wide">Modelos Disponíveis</h3>
@@ -210,7 +210,7 @@ const TemplateManager = () => {
                 {templates.map(t => (
                   <div key={t.id} className="group relative bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden hover:shadow-md transition-all hover:border-blue-300 dark:hover:border-blue-700">
 
-                    {/* Header do Card */}
+                    {}
                     <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-start bg-white dark:bg-gray-800">
                       <div>
                         <h4 className="font-semibold text-gray-900 dark:text-white text-sm">{t.name}</h4>
@@ -225,11 +225,11 @@ const TemplateManager = () => {
                       </button>
                     </div>
 
-                    {/* Preview do Chat */}
+                    {}
                     <div className="p-4 space-y-3">
                       <div className="bg-white dark:bg-gray-600 p-3 rounded-lg rounded-tl-sm text-sm text-gray-700 dark:text-gray-200 shadow-sm border border-gray-100 dark:border-gray-500 relative">
                         {t.text}
-                        {/* Triângulo do balão */}
+                        {}
                         <div className="absolute -left-1.5 top-0 w-3 h-3 bg-white dark:bg-gray-600 border-l border-b border-gray-100 dark:border-gray-500 transform rotate-45"></div>
                       </div>
 

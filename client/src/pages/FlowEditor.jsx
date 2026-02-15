@@ -11,7 +11,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-// Ícones
+
 import {
   MessageSquare, TextCursorInput, Split, FileText,
   Clock, Users, Code, Globe, Hourglass,
@@ -47,11 +47,11 @@ const FlowEditor = () => {
   const { id } = useParams();
   const { getNodes, getViewport } = useReactFlow();
 
-  // --- ADICIONE ESTE BLOCO AQUI ---
+
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
 
   useEffect(() => {
-    // Observador para detectar quando a classe "dark" muda no HTML
+
     const observer = new MutationObserver(() => {
       setIsDark(document.documentElement.classList.contains('dark'));
     });
@@ -69,10 +69,10 @@ const FlowEditor = () => {
   const [flowName, setFlowName] = useState('');
   const [configModal, setConfigModal] = useState({ open: false, nodeId: null });
 
-  // --- 1. CALLBACKS E FUNÇÕES DE SUPORTE ---
+
 
   const openConfig = useCallback((nodeId) => {
-    // Busca a versão mais recente do nó no estado do ReactFlow
+
     const currentNode = getNodes().find(n => n.id === nodeId);
     if (currentNode) {
       console.log("Abrindo config para:", currentNode.type);
@@ -98,16 +98,16 @@ const FlowEditor = () => {
       availableTemplates: tData,
       availableSchedules: sData,
       onDelete: deleteNode,
-      onConfig: (id) => openConfig(id), // Injeção crucial para o Double Click
+      onConfig: (id) => openConfig(id),
       onChange: (v) => updateNodeData(node.id, { text: v }),
-      // ... outros legados se necessário
+
     }
   }), [deleteNode, openConfig, updateNodeData]);
 
-  // --- 2. SALVAR CONFIGURAÇÃO E GERAR RAMIFICAÇÕES ---
+
 
   const handleSaveConfig = (nodeId, newData) => {
-    // Atualiza o nó pai
+
     updateNodeData(nodeId, newData);
 
     const parentNode = getNodes().find(n => n.id === nodeId);
@@ -118,19 +118,19 @@ const FlowEditor = () => {
     const baseX = parentNode.position.x + 300;
     const baseY = parentNode.position.y;
 
-    // EXPANSÃO: CONDIÇÃO (IF)
+
     if (parentNode.type === 'conditionNode' && newData.conditions) {
-      // 1. Limpa filhos antigos do nó pai (apenas os child_) e edges automáticos
-      // IMPORTANTE: Preserva edges manuais do usuário, removendo apenas edges gerados automaticamente
+
+
       setNodes(nds => nds.filter(n => !n.id.startsWith(`child_${nodeId}`)));
-      setEdges(eds => eds.filter(e => 
+      setEdges(eds => eds.filter(e =>
         !(e.source === nodeId && (
-          e.id.startsWith(`edge_${nodeId}_`) || 
+          e.id.startsWith(`edge_${nodeId}_`) ||
           e.id.startsWith(`edge_${nodeId}_else`)
         ))
       ));
 
-      // 2. Gera os caminhos das Condições (IFs)
+
       newData.conditions.forEach((cond, index) => {
         const condId = String(cond.id);
         const childId = `child_${nodeId}_${condId}`;
@@ -145,13 +145,13 @@ const FlowEditor = () => {
           id: `edge_${nodeId}_${condId}`,
           source: nodeId,
           target: childId,
-          sourceHandle: condId, // Importante para o simulador!
+          sourceHandle: condId,
           type: 'smoothstep'
         });
       });
 
-      // 3. GERAÇÃO CONDICIONAL DO ELSE
-      if (newData.hasElse !== false) { // Verifica o checkbox (default true)
+
+      if (newData.hasElse !== false) {
         const elseId = `child_${nodeId}_else`;
 
         newNodes.push({
@@ -165,25 +165,25 @@ const FlowEditor = () => {
           id: `edge_${nodeId}_else`,
           source: nodeId,
           target: elseId,
-          sourceHandle: 'else', // O simulador procura por este texto
+          sourceHandle: 'else',
           style: { strokeDasharray: 5, stroke: '#94a3b8' }
         });
       }
 
-      // Aplica as mudanças no ReactFlow
+
       if (newNodes.length > 0) {
         setNodes(nds => [...nds, ...newNodes]);
         setEdges(eds => [...eds, ...newEdges]);
       }
     }
 
-    // EXPANSÃO: TEMPLATE (BOTÕES)
+
     if (parentNode.type === 'templateNode' && newData.templateId) {
       const template = templates.find(t => t.id === newData.templateId);
       if (template && template.buttons) {
-        // Remove apenas nós filhos automáticos, preservando conexões manuais do usuário
+
         setNodes(nds => nds.filter(n => !n.id.startsWith(`child_${nodeId}`)));
-        setEdges(eds => eds.filter(e => 
+        setEdges(eds => eds.filter(e =>
           !(e.source === nodeId && (
             e.id.startsWith(`e_${nodeId}_`)
           ))
@@ -198,12 +198,12 @@ const FlowEditor = () => {
             data: { label: btn.label }
           });
 
-          // Criação da LINHA (Edge)
+
           newEdges.push({
             id: `e_${nodeId}_${childId}`,
-            source: nodeId,     // Nó pai (Template)
-            target: childId,    // Nó filho (Case)
-            sourceHandle: btn.id, // <--- ISSO AQUI É O MAIS IMPORTANTE! 
+            source: nodeId,
+            target: childId,
+            sourceHandle: btn.id,
             type: 'default',
             style: { stroke: '#be185d', strokeWidth: 2 }
           });
@@ -211,11 +211,11 @@ const FlowEditor = () => {
       }
     }
 
-    // EXPANSÃO: HORÁRIO
+
     if (parentNode.type === 'scheduleNode') {
-      // Remove apenas nós filhos automáticos, preservando conexões manuais do usuário
+
       setNodes(nds => nds.filter(n => !n.id.startsWith(`child_${nodeId}`)));
-      setEdges(eds => eds.filter(e => 
+      setEdges(eds => eds.filter(e =>
         !(e.source === nodeId && (
           e.id.startsWith(`e_${nodeId}_`)
         ))
@@ -244,7 +244,7 @@ const FlowEditor = () => {
     }
   };
 
-  // --- 3. CARREGAMENTO ---
+
 
   const load = useCallback(async () => {
     try {
@@ -263,7 +263,7 @@ const FlowEditor = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  // --- 4. REACT FLOW HANDLERS ---
+
 
   const onNodesChange = useCallback((c) => setNodes(nds => applyNodeChanges(c, nds)), []);
   const onEdgesChange = useCallback((c) => setEdges(eds => applyEdgeChanges(c, eds)), []);
@@ -272,12 +272,12 @@ const FlowEditor = () => {
     const sourceNode = nodes.find(n => n.id === params.source);
     if (!sourceNode) return;
 
-    // Bloqueia conexão de terminais e pais que usam expansão automática
+
     if (['gotoNode', 'endNode', 'finalNode', 'conditionNode', 'templateNode', 'scheduleNode'].includes(sourceNode.type)) {
       return toast.error("Este nó gera conexões automaticamente. Configure-o com duplo clique.");
     }
 
-    // Regra Padrão: 1 Saída
+
     if (edges.some(e => e.source === params.source)) return toast.error("Apenas uma saída permitida.");
 
     setEdges((eds) => addEdge(params, eds));
@@ -290,11 +290,11 @@ const FlowEditor = () => {
     }
   }, []);
 
-  // --- 4.1 KEYBOARD HANDLER PARA PROTEÇÃO DO START NODE ---
+
   const onKeyDown = useCallback((event) => {
     const { key, ctrlKey } = event;
 
-    // Bloqueia Delete/Backspace/Ctrl+A para o Start Node
+
     if (['Delete', 'Backspace', 'a'].includes(key) || (ctrlKey && key === 'a')) {
       const selectedNodes = nodes.filter(n => n.selected);
 
@@ -306,7 +306,7 @@ const FlowEditor = () => {
     }
   }, [nodes]);
 
-  // --- 5. CRIAÇÃO E SALVAMENTO ---
+
 
   const createNode = (type) => {
     const newId = `${type}_${Date.now()}`;
@@ -325,7 +325,7 @@ const FlowEditor = () => {
   const save = async (publish = false) => {
     if (publish && !window.confirm(`Publicar "${flowName}" em Produção?`)) return;
 
-    // Limpa funções antes de salvar
+
     const cleanNodes = nodes.map(({ data, ...n }) => {
       const { availableVars, availableTemplates, availableSchedules, onDelete, onConfig, ...cleanData } = data;
       return { ...n, data: cleanData };
@@ -340,7 +340,7 @@ const FlowEditor = () => {
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-slate-900">
 
-      {/* O MODAL DE CONFIGURAÇÃO */}
+      {}
       <NodeConfigModal
         isOpen={configModal.open}
         node={nodes.find(n => n.id === configModal.nodeId)}
@@ -350,7 +350,7 @@ const FlowEditor = () => {
         queues={queues}
       />
 
-      {/* TOOLBAR */}
+      {}
       <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-4 py-2 flex items-center gap-4 shadow-sm z-10">
         <span className="font-bold text-sm text-gray-700 dark:text-slate-200 px-2 border-r border-gray-200 dark:border-slate-700 mr-2">
           {flowName}
@@ -376,12 +376,12 @@ const FlowEditor = () => {
           <button
             onClick={() => save(false)}
             className="
-      flex items-center gap-1.5 px-3 py-1.5 
-      bg-white dark:bg-slate-700 
-      border border-gray-300 dark:border-slate-600 
-      text-gray-700 dark:text-slate-100 
+      flex items-center gap-1.5 px-3 py-1.5
+      bg-white dark:bg-slate-700
+      border border-gray-300 dark:border-slate-600
+      text-gray-700 dark:text-slate-100
       rounded text-sm font-medium
-      hover:bg-gray-50 dark:hover:bg-slate-600 
+      hover:bg-gray-50 dark:hover:bg-slate-600
       transition-all shadow-sm
     "
           >
@@ -392,11 +392,11 @@ const FlowEditor = () => {
           <button
             onClick={() => save(true)}
             className="
-      flex items-center gap-1.5 px-3 py-1.5 
-      bg-blue-600 dark:bg-blue-500 
-      text-white 
+      flex items-center gap-1.5 px-3 py-1.5
+      bg-blue-600 dark:bg-blue-500
+      text-white
       rounded text-sm font-medium
-      hover:bg-blue-700 dark:hover:bg-blue-400 
+      hover:bg-blue-700 dark:hover:bg-blue-400
       transition-all shadow-md active:scale-95
     "
           >
@@ -416,7 +416,7 @@ const FlowEditor = () => {
           nodeTypes={nodeTypes}
           fitView
           snapToGrid={true}
-          snapGrid={[20, 20]} // 20px grid
+          snapGrid={[20, 20]}
         >
           <Background
             color={isDark ? '#334155' : '#cbd5e1'}
@@ -434,12 +434,12 @@ const ToolButton = ({ icon: Icon, label, onClick, color = "text-gray-600 dark:te
   <button
     onClick={onClick}
     className={`
-      flex items-center gap-1.5 px-3 py-1.5 
-      bg-white dark:bg-slate-700 
-      border border-gray-200 dark:border-slate-600 
-      rounded text-xs font-medium 
-      ${color} 
-      hover:bg-gray-50 dark:hover:bg-slate-600 
+      flex items-center gap-1.5 px-3 py-1.5
+      bg-white dark:bg-slate-700
+      border border-gray-200 dark:border-slate-600
+      rounded text-xs font-medium
+      ${color}
+      hover:bg-gray-50 dark:hover:bg-slate-600
       whitespace-nowrap shadow-sm transition-colors
     `}
   >

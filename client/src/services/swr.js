@@ -26,8 +26,8 @@ export const useAPI = (key, fetcherOptions = {}) => {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      dedupingInterval: 0, // Desabilitado para sempre buscar dados frescos
-      refreshInterval: 5000, // Atualiza a cada 5 segundos automaticamente
+      dedupingInterval: 0,
+      refreshInterval: 5000,
       errorRetryCount: 3,
     }
   );

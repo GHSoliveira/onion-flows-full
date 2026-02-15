@@ -62,7 +62,7 @@ export default function SuperAdminDashboard() {
       <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">Dashboard Geral</h1>
       <p className="text-slate-600 dark:text-slate-400 mb-8">Visão geral de todos os tenants</p>
 
-      {/* Cards de Métricas */}
+      {}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <MetricCard
           icon={Building2}
@@ -94,7 +94,7 @@ export default function SuperAdminDashboard() {
         />
       </div>
 
-      {/* Status dos Tenants */}
+      {}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
           <div className="text-2xl font-bold text-green-600 dark:text-green-400">{metrics.tenants?.ativos || 0}</div>
@@ -110,9 +110,9 @@ export default function SuperAdminDashboard() {
         </div>
       </div>
 
-      {/* Billing e Tenants */}
+      {}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Billing Overview */}
+        {}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6">
           <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
             <CreditCard size={20} />
@@ -137,7 +137,7 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
 
-        {/* Acessar Tenants */}
+        {}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6">
           <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
             <ArrowRight size={20} />
@@ -164,7 +164,7 @@ export default function SuperAdminDashboard() {
         </div>
       </div>
 
-      {/* Detalhes por Tenant */}
+      {}
       <div className="mt-8 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6">
         <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
           <Activity size={20} />
@@ -186,7 +186,7 @@ export default function SuperAdminDashboard() {
                 const usuarios = metrics.usuarios?.porTenant?.find(u => u.tenantId === tenant.tenantId)?.count || 0;
                 const flows = metrics.flows?.porTenant?.find(f => f.tenantId === tenant.tenantId)?.count || 0;
                 const chats = metrics.chats?.porTenant?.find(c => c.tenantId === tenant.tenantId)?.count || 0;
-                
+
                 return (
                   <tr key={tenant.tenantId} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                     <td className="py-3 font-medium text-slate-800 dark:text-white">{tenant.name}</td>

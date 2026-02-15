@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-// Criar um ambiente de desenvolvimento funcional com JSON
+
 const createDevelopmentEnv = () => {
   const envContent = `# 🔐 SEGURANÇA
 JWT_SECRET=dhuish4h32ui4h32iufnjdkhf89889f0ds8f0vnjsnnsdshauhu32
@@ -10,11 +10,11 @@ JWT_EXPIRES_IN=8h
 # 🌐 CONFIGURAÇÃO
 NODE_ENV=development
 PORT=3001
-CLIENT_URL=http://localhost:3000
+CLIENT_URL=http:
 
 # 📊 BANCO DE DADOS (OPCIONAL)
 # Descomente para usar MongoDB (requerido: cluster válido + credenciais)
-# MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/fiberbot
+# MONGODB_URI=mongodb+srv:
 MONGODB_DB_NAME=fiberbot
 
 # 📝 LOGS
@@ -27,7 +27,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 LOGIN_RATE_LIMIT_MAX=5
 
 # 📡 WEBSOCKETS
-SOCKET_CORS_ORIGIN=http://localhost:3000
+SOCKET_CORS_ORIGIN=http:
 
 # 🔧 FORÇAR USO DO ADAPTER
 USE_MONGODB=false

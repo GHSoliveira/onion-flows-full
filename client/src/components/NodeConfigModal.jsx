@@ -36,7 +36,7 @@ const AnchorConfig = ({ data, onChange }) => (
     </div>
 );
 
-// --- COMPONENTES DE CONFIGURAÇÃO ESPECÍFICOS ---
+
 
 const ScriptConfig = ({ data, onChange }) => (
     <div className="space-y-4">
@@ -113,7 +113,7 @@ const ConditionConfig = ({ data, onChange, vars }) => (
                     <input
                         type="checkbox"
                         className="sr-only peer"
-                        checked={data.hasElse ?? true} // Padrão é true se for nulo
+                        checked={data.hasElse ?? true}
                         onChange={e => onChange({ hasElse: e.target.checked })}
                     />
                     <div className="w-10 h-5 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
@@ -272,7 +272,7 @@ const FinalNodeConfig = ({ data, onChange }) => (
     </div>
 );
 
-// --- COMPONENTES JÁ EXISTENTES (RE-IMPLEMENTADOS PARA SEGURANÇA) ---
+
 
 const MessageConfig = ({ data, onChange }) => (
     <div>
@@ -286,7 +286,7 @@ const MessageConfig = ({ data, onChange }) => (
     </div>
 );
 
-// --- MODAL PRINCIPAL ---
+
 
 const NodeConfigModal = ({ node, isOpen, onClose, onSave, vars = [], templates = [], schedules = [], queues = [] }) => {
     const [localData, setLocalData] = useState({});
@@ -311,7 +311,7 @@ const NodeConfigModal = ({ node, isOpen, onClose, onSave, vars = [], templates =
     switch (node.type) {
         case 'setValueNode':
             Title = 'Definir Valor de Variável';
-            Icon = Database; // Certifique-se de ter importado 'Database' do lucide-react
+            Icon = Database;
             Content = (
                 <div className="space-y-4">
                     <div>
@@ -367,9 +367,9 @@ const NodeConfigModal = ({ node, isOpen, onClose, onSave, vars = [], templates =
             Icon = Send;
             Content = <GotoConfig data={localData} onChange={handleLocalChange} />;
             break;
-        case 'anchorNode': // <-- ADICIONE ESTE BLOCO
+        case 'anchorNode':
             Title = 'Configurar Âncora';
-            Icon = Anchor; // Certifique-se de ter importado 'Anchor' do lucide-react
+            Icon = Anchor;
             Content = <AnchorConfig data={localData} onChange={handleLocalChange} />;
             break;
 
@@ -450,7 +450,7 @@ const NodeConfigModal = ({ node, isOpen, onClose, onSave, vars = [], templates =
             break;
         case 'httpRequestNode':
             Title = 'Requisição HTTP (API)';
-            Icon = Globe; // Importe Globe de lucide-react
+            Icon = Globe;
             Content = (
                 <HttpRequestConfig
                     data={localData}

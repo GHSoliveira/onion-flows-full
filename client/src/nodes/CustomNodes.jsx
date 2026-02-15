@@ -7,11 +7,11 @@ import {
     X, Flag, GitBranch
 } from 'lucide-react';
 
-// --- CONFIGURAÇÃO DE ESTILO ---
+
 const NODE_WIDTH = 220;
 const NODE_HEIGHT = 50;
 
-// Tooltip simples no Hover
+
 const Tooltip = ({ text }) => (
     <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50 shadow-lg">
         {text || "Sem descrição"}
@@ -19,9 +19,9 @@ const Tooltip = ({ text }) => (
     </div>
 );
 
-// Componente Base Compacto
+
 const CompactNode = ({ id, data, icon: Icon, color, label, outputs = [], onDelete, disableConfig = false }) => {
-    // --- ADICIONE OU VERIFIQUE ESTA LINHA ABAIXO ---
+
     const handles = outputs.length > 0 ? outputs : [{ id: 'default', label: '' }];
 
     return (
@@ -62,10 +62,10 @@ const CompactNode = ({ id, data, icon: Icon, color, label, outputs = [], onDelet
                 )}
             </div>
 
-            {/* Handle de Entrada (Esquerda) */}
+            {}
             <Handle type="target" position={Position.Left} className="!w-2 !h-6 !rounded-sm !bg-slate-300 dark:!bg-slate-600 !border-none" />
 
-            {/* Handles de Saída (Direita) - Aqui é onde a variável 'handles' é usada */}
+            {}
             {handles.map((output, index) => {
                 const topPos = handles.length === 1 ? 50 : ((index + 1) * 100) / (handles.length + 1);
                 return (
@@ -87,7 +87,7 @@ const CompactNode = ({ id, data, icon: Icon, color, label, outputs = [], onDelet
         </div>
     );
 };
-// --- NOVO NÓ: CASE (USADO PARA RAMIFICAÇÕES VISUAIS) ---
+
 export const CaseNode = ({ id, data }) => (
     <div className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:shadow-md transition-all cursor-pointer rounded-full px-4 py-2 shadow-sm min-w-35 h-10">
         <Handle type="target" position={Position.Left} className="!w-2 !h-2 !bg-slate-400 !border-none" />
@@ -100,7 +100,7 @@ export const CaseNode = ({ id, data }) => (
 );
 
 
-// --- WRAPPERS DOS NÓS COMPACTOS ---
+
 
 export const StartNode = (props) => (
     <CompactNode
@@ -108,8 +108,8 @@ export const StartNode = (props) => (
         icon={Play}
         color="#10b981"
         label="Início"
-        onDelete={null} // Start node não pode ser deletado
-        disableConfig={true} // Start node não tem configuração
+        onDelete={null}
+        disableConfig={true}
     />
 );
 export const EndNode = (props) => <CompactNode {...props} icon={Square} color="#ef4444" label="Fim" outputs={[]} />;
@@ -130,21 +130,21 @@ export const HttpRequestNode = (props) => (
         icon={Globe}
         color="#0891b2"
         label="API HTTP"
-        outputs={[{ id: 'source', label: '' }]} // Saída única - erros tratados no simulador
+        outputs={[{ id: 'source', label: '' }]}
     />
 );
 
 export const ConditionNode = (props) => {
-    // Agora o ConditionNode é "Cego" (tem apenas 1 saída genérica ou oculta)
-    // porque as ramificações reais são os nós CaseNode gerados pelo Editor.
-    // Mas precisamos deixar um handle invisível para manter a consistência.
+
+
+
     return (
         <CompactNode
             {...props}
             icon={Split}
             color="#7c3aed"
             label="Condicional"
-            outputs={[{ id: 'source', label: '' }]} // Saída única visual que conecta aos filhos
+            outputs={[{ id: 'source', label: '' }]}
         />
     );
 };
@@ -155,13 +155,13 @@ export const ScheduleNode = (props) => (
         icon={Clock}
         color="#16a34a"
         label="Horário"
-        outputs={[{ id: 'source', label: '' }]} // Saída única - gera caseNodes automaticamente
+        outputs={[{ id: 'source', label: '' }]}
     />
 );
 
 export const TemplateNode = (props) => {
-    // Mesmo caso do Condition: o TemplateNode é o "Pai".
-    // Os botões serão nós filhos (CaseNode) gerados automaticamente.
+
+
     return (
         <CompactNode
             {...props}

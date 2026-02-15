@@ -14,7 +14,7 @@ const SystemLogs = () => {
         const res = await apiRequest('/logs');
         if (res && res.ok) {
           const data = await res.json();
-          // Backend retorna { logs: [...], total, page, totalPages }
+
           const logArray = data.logs || (Array.isArray(data) ? data : []);
           setLogs(Array.isArray(logArray) ? logArray : []);
         } else {
@@ -67,7 +67,7 @@ const SystemLogs = () => {
 
       <div className="flex-1 bg-[#0f172a] rounded-xl border border-slate-700 overflow-hidden flex flex-col shadow-lg">
 
-        {/* Header da Tabela */}
+        {}
         <div className="flex items-center justify-between px-6 py-3 bg-[#1e293b] border-b border-slate-700">
           <div className="flex items-center gap-2">
             <Activity size={14} className="text-emerald-400 animate-pulse" />
@@ -76,7 +76,7 @@ const SystemLogs = () => {
           <span className="text-xs font-mono text-slate-500">Últimos 1000 eventos</span>
         </div>
 
-        {/* Corpo da Tabela */}
+        {}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           <table className="w-full text-left border-collapse">
             <thead className="bg-[#0f172a] sticky top-0 z-10 shadow-sm">
@@ -104,7 +104,7 @@ const SystemLogs = () => {
                   const config = getLogConfig(log.type);
                   const Icon = config.icon;
                   const rowKey = log.id || log._id || `log-${index}`;
-                  
+
                   return (
                     <tr key={rowKey} className="hover:bg-slate-800/30 transition-colors group">
                       <td className="px-6 py-3 text-xs font-mono text-slate-400 whitespace-nowrap group-hover:text-slate-300">

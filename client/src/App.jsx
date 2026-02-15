@@ -4,7 +4,7 @@ import { useAuth } from './context/AuthContext';
 import { TenantProvider, useTenant } from './context/TenantContext';
 import Login from './pages/Login';
 
-// Páginas (Lazy Loading para performance)
+
 const FlowList = lazy(() => import('./pages/FlowList'));
 const FlowEditor = lazy(() => import('./pages/FlowEditor'));
 const VariableManager = lazy(() => import('./pages/VariableManager'));
@@ -18,7 +18,7 @@ const SystemLogs = lazy(() => import('./pages/SystemLogs'));
 const AdminPanel = lazy(() => import('./pages/AdminPanel'));
 const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'));
 
-// Ícones
+
 import {
   LayoutDashboard, Workflow, Users, FileText, Database,
   CalendarClock, MessageSquare, Headset, LogOut, Bot,
@@ -31,7 +31,7 @@ const LoadingSpinner = () => (
   </div>
 );
 
-// Componente wrapper para redirect com tenantId
+
 const TenantIndexRedirect = () => {
   const { tenantId } = useParams();
   return <Navigate to={`/tenant/${tenantId}/monitor`} replace />;
@@ -102,9 +102,9 @@ const AppContent = () => {
       )}
 
       <aside className={`
-  fixed lg:static inset-y-0 left-0 z-50 w-64 
-  bg-white dark:bg-slate-900 
-  border-r border-gray-200 dark:border-slate-800 
+  fixed lg:static inset-y-0 left-0 z-50 w-64
+  bg-white dark:bg-slate-900
+  border-r border-gray-200 dark:border-slate-800
   flex flex-col transition-transform duration-300 ease-in-out
   ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 w-fit'}
 `}>
@@ -156,7 +156,7 @@ const AppContent = () => {
               <NavItem to="/admin" icon={Building2} label="Tenants" />
               <NavItem to="/system-logs" icon={ScrollText} label="Logs Globais" />
 
-              {/* Links do tenant selecionado - aparecem quando tenant está ativo */}
+              {}
               {tenant && tenant.id !== 'super_admin' && (
                 <>
                   <div className="px-3 mt-6 mb-2 text-[10px] font-bold text-blue-500 uppercase tracking-wider">
@@ -251,7 +251,7 @@ const AppContent = () => {
               <Route path="/schedules" element={<ScheduleManager />} />
               <Route path="/simulator" element={<ChatSimulator />} />
 
-              {/* ROTAS ANINHADAS POR TENANT (para SUPER_ADMIN com tenant selecionado) */}
+              {}
               <Route path="/tenant/:tenantId">
                 <Route index element={<TenantIndexRedirect />} />
                 <Route path="monitor" element={<MonitoringDashboard />} />

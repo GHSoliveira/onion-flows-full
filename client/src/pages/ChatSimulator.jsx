@@ -29,7 +29,7 @@ const ChatSimulator = () => {
   const [isClosed, setIsClosed] = useState(false);
   const chatEndRef = useRef(null);
 
-  // 1. CARREGAMENTO INICIAL
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -48,36 +48,36 @@ const ChatSimulator = () => {
     loadData();
   }, []);
 
-  // Scroll Automático
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  // --- MOTOR DE EXECUÇÃO ---
 
-  // ChatSimulator.jsx
+
+
 
   const parseText = (text, vars) => {
     if (!text) return "";
 
-    // Regex atualizado: Aceita letras, números, underscore, ponto e colchetes
-    // Ex: {cliente.nome}, {pedidos[0].id}
+
+
     return text.replace(/\{([\w\.[\]]+)\}/g, (match, path) => {
       try {
-        // Divide o caminho por pontos e colchetes
+
         const keys = path.split(/[.[\]]/).filter(Boolean);
         let value = vars;
 
-        // Navega profundidade no objeto
+
         for (const key of keys) {
           if (value === undefined || value === null) return match;
           value = value[key];
         }
 
-        // Se encontrou algo válido, retorna. Senão, devolve o {texto} original.
+
         return value !== undefined ? String(value) : match;
       } catch (e) {
-        return match; // Em caso de erro, não quebra, só não substitui
+        return match;
       }
     });
   };
@@ -86,7 +86,7 @@ const ChatSimulator = () => {
     if (varMap && Array.isArray(varMap)) {
       varMap.forEach(mapping => {
         if (mapping.global && mapping.local) {
-          // Cria o alias: local = valor da global
+
           localContext[mapping.local] = globalVars[mapping.global];
         }
       });
@@ -112,10 +112,10 @@ const ChatSimulator = () => {
 
     console.log(`[FLOW] Executando nó: ${node.type} (${node.id})`);
 
-    // Resolve variáveis locais/alias se houver mapeamento no nó
+
     const contextWithAlias = resolveVariables(node.data.varMap, currentVars);
 
-    // --- 1. NÓS DE MENSAGEM / INÍCIO ---
+
     if (node.type === 'messageNode' || node.type === 'startNode') {
       if (node.data?.text && node.data.text !== "Início") {
         const text = parseText(node.data.text, contextWithAlias);
@@ -128,42 +128,42 @@ const ChatSimulator = () => {
       return;
     }
 
-    // --- 2. NÓ DE ENTRADA (INPUT) ---
+
     if (node.type === 'inputNode') {
       const questionText = parseText(node.data?.text || "Digite uma informação:", currentVars);
       await addBotMessage(questionText, null, idChat);
-      setCurrentNodeId(node.id); // Trava o simulador aguardando resposta do usuário
+      setCurrentNodeId(node.id);
       return;
     }
 
-    // --- 3. NÓ DE TEMPLATE (HSM / BOTÕES) ---
+
     if (node.type === 'templateNode') {
       const template = templates.find(t => t.id === node.data.templateId);
       if (template) {
         const text = parseText(template.text, currentVars);
         await addBotMessage(text, template.buttons, idChat);
-        setCurrentNodeId(node.id); // Trava o simulador aguardando clique no botão
+        setCurrentNodeId(node.id);
       } else {
         console.error("Template não encontrado:", node.data.templateId);
       }
       return;
     }
 
-    // --- 4. NÓ DE CONDICIONAL (IF / ELSE) ---
+
     if (node.type === 'conditionNode') {
-      let matchedHandleId = 'else'; // Fallback padrão
+      let matchedHandleId = 'else';
 
       console.log("[CONDITION] Avaliando regras para o nó:", node.id);
       console.log("[CONDITION] Variáveis atuais:", currentVars);
 
       for (const cond of node.data.conditions || []) {
-        // Busca o valor da variável na sessão. Se não existir, vira string vazia.
+
         const varValue = currentVars[cond.variable] !== undefined ? currentVars[cond.variable] : '';
         const condValue = cond.value;
 
         let isMatch = false;
 
-        // Normalização para comparação (evita erro de String vs Número)
+
         const v1 = String(varValue).trim().toLowerCase();
         const v2 = String(condValue).trim().toLowerCase();
 
@@ -195,7 +195,7 @@ const ChatSimulator = () => {
 
       if (edgeToCase) {
         const caseNodeId = edgeToCase.target;
-        // 2. Acha a aresta que sai do nó "balão" para o próximo nó real
+
         const nextEdge = flowData.edges.find(e => e.source === caseNodeId);
 
         if (nextEdge) {
@@ -203,15 +203,15 @@ const ChatSimulator = () => {
           processNextNode(nextEdge.target, flowData, currentVars, idChat);
         } else {
           console.warn("[CONDITION] O caminho condicional para", matchedHandleId, "não está conectado a nada.");
-          // Se travar aqui, é porque você esqueceu de puxar a linha depois do balãozinho no editor
+
         }
       } else {
         console.error("[CONDITION] Nenhuma aresta encontrada para o handle:", matchedHandleId);
       }
-      return; // Interrompe para não seguir caminhos errados
+      return;
     }
 
-    // --- 5. NÓ DE SCRIPT (CÓDIGO JS) ---
+
     if (node.type === 'scriptNode') {
       try {
         const execute = new Function('vars', `${node.data.script}; return vars;`);
@@ -227,11 +227,11 @@ const ChatSimulator = () => {
       return;
     }
 
-    // --- 6. NÓ DE API (HTTP REQUEST) ---
+
     if (node.type === 'httpRequestNode') {
       const url = parseText(node.data.url, currentVars);
       try {
-        // Timeout de 10 segundos para evitar travamento
+
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
 
@@ -265,16 +265,16 @@ const ChatSimulator = () => {
       return;
     }
 
-    // --- 7. NÓ DE HORÁRIO (SCHEDULE) ---
+
     if (node.type === 'scheduleNode') {
-      // Simulação: Verifica se está dentro do horário de expediente
-      // Em produção real, usaria node.data.scheduleId para buscar configuração
+
+
       const now = new Date();
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
       const currentTime = currentHour * 60 + currentMinute;
 
-      const status = 'inside'; // hardcoded para teste - implementar lógica real com schedules
+      const status = 'inside';
       const edgeToCase = flowData.edges.find(e => e.source === nodeId && e.sourceHandle === status);
       if (edgeToCase) {
         const nextEdge = flowData.edges.find(e => e.source === edgeToCase.target);
@@ -283,7 +283,7 @@ const ChatSimulator = () => {
       return;
     }
 
-    // --- 8. NÓ DE SET VARIABLE ---
+
     if (node.type === 'setValueNode') {
       const newVars = { ...currentVars, [node.data.variableName]: node.data.value };
       setSessionVars(newVars);
@@ -293,7 +293,7 @@ const ChatSimulator = () => {
       return;
     }
 
-    // --- 9. NÓ DE DELAY ---
+
     if (node.type === 'delayNode') {
       setIsTyping(true);
       setTimeout(() => {
@@ -304,7 +304,7 @@ const ChatSimulator = () => {
       return;
     }
 
-    // --- 10. GOTO E ÂNCORA ---
+
     if (node.type === 'gotoNode') {
       const targetAnchorName = node.data.targetAnchor;
       const anchorNode = flowData.nodes.find(n => n.type === 'anchorNode' && n.data.anchorName === targetAnchorName);
@@ -322,7 +322,7 @@ const ChatSimulator = () => {
       return;
     }
 
-    // --- 11. TRANSFERÊNCIA PARA FILA (QUEUE) ---
+
     if (node.type === 'queueNode') {
       const queue = node.data.queueName;
       await addBotMessage(`Transferindo para o setor **${queue}**. Aguarde um momento...`, null, idChat);
@@ -330,11 +330,11 @@ const ChatSimulator = () => {
         method: 'POST',
         body: JSON.stringify({ chatId: idChat, queue, reason: 'Fluxo automático' })
       });
-      // Aqui o bot para, pois o chat vira humano (status waiting/open)
+
       return;
     }
 
-    // --- 12. FIM DO FLUXO ---
+
     if (node.type === 'endNode' || node.type === 'finalNode') {
       const finalMessage = node.data.text || "Atendimento finalizado. Obrigado!";
       await addBotMessage(finalMessage, null, idChat);
@@ -344,7 +344,7 @@ const ChatSimulator = () => {
     }
   };
 
-  // --- INTERAÇÃO ---
+
 
   const startSimulation = async () => {
     if (!selectedFlowId) return toast.error("Selecione um fluxo");
@@ -381,22 +381,22 @@ const ChatSimulator = () => {
     const text = userInput;
     setUserInput('');
 
-    // 1. Adiciona a mensagem do usuário no chat (Banco e Tela)
+
     await apiRequest(`/chats/${chatId}/messages`, {
       method: 'POST',
       body: JSON.stringify({ sender: 'user', text })
     });
     setMessages(prev => [...prev, { sender: 'user', text, timestamp: new Date() }]);
 
-    // 2. Verifica se o bot estava esperando um input
+
     if (currentNodeId) {
       const node = activeFlow.nodes.find(n => n.id === currentNodeId);
 
       if (node?.type === 'inputNode') {
-        const varName = node.data.variableName; // A variável que você escolheu no modal
+        const varName = node.data.variableName;
 
         if (varName) {
-          // 3. Salva o dado no estado local e no servidor
+
           const newVars = { ...sessionVars, [varName]: text };
           setSessionVars(newVars);
 
@@ -405,13 +405,13 @@ const ChatSimulator = () => {
             body: JSON.stringify(newVars)
           });
 
-          // 4. Procura a linha de saída deste nó de input
+
           const edge = activeFlow.edges.find(e => e.source === currentNodeId);
 
           if (edge) {
             console.log("Input recebido, seguindo para:", edge.target);
-            setCurrentNodeId(null); // Limpa o estado de espera
-            // 5. Retoma a execução do bot a partir do próximo nó
+            setCurrentNodeId(null);
+
             processNextNode(edge.target, activeFlow, newVars, chatId);
           } else {
             console.warn("Usuário respondeu, mas não há conexão saindo do nó de Input.");
@@ -428,13 +428,13 @@ const ChatSimulator = () => {
 
     console.log("Botão clicado:", label, "ID:", btnId);
 
-    // 1. Acha a conexão Template -> CaseNode
-    // Tentamos primeiro pelo ID do botão, se não achar, pegamos qualquer linha que saia do nó
+
+
     let edgeToCase = activeFlow.edges.find(e =>
       e.source === currentNodeId && e.sourceHandle === btnId
     );
 
-    // Fallback: Se não achou pelo handle, mas só tem uma saída ou é um fluxo antigo
+
     if (!edgeToCase) {
       console.warn("Conexão exata não encontrada. Tentando busca por ordem...");
       edgeToCase = activeFlow.edges.find(e => e.source === currentNodeId);
@@ -443,11 +443,11 @@ const ChatSimulator = () => {
     if (edgeToCase) {
       const caseNodeId = edgeToCase.target;
 
-      // 2. Acha a conexão CaseNode -> Próximo nó
+
       const edgeFromCase = activeFlow.edges.find(e => e.source === caseNodeId);
 
       if (edgeFromCase) {
-        // Registra a mensagem do usuário
+
         setMessages(prev => [...prev, { sender: 'user', text: label, timestamp: new Date() }]);
         await apiRequest(`/chats/${chatId}/messages`, {
           method: 'POST',
@@ -465,15 +465,15 @@ const ChatSimulator = () => {
     }
   };
 
-  // Polling
-  // Polling Seguro com controle de execução paralela
+
+
   useEffect(() => {
     let isMounted = true;
     let timeoutId = null;
     let isPolling = false;
 
     const pollData = async () => {
-      // Impede execução paralela
+
       if (isPolling || !isMounted || isClosed || !chatId || !currentCpf) {
         return;
       }
@@ -496,7 +496,7 @@ const ChatSimulator = () => {
             return;
           }
 
-          // Só atualiza se tiver mensagens novas
+
           if (chatData.messages.length > messages.length) {
             setMessages(chatData.messages);
           }
@@ -507,7 +507,7 @@ const ChatSimulator = () => {
 
       isPolling = false;
 
-      // Agenda próxima execução apenas se ainda estiver mounted
+
       if (isMounted && !isClosed) {
         timeoutId = setTimeout(pollData, 3000);
       }
@@ -518,13 +518,13 @@ const ChatSimulator = () => {
     return () => {
       isMounted = false;
       if (timeoutId) clearTimeout(timeoutId);
-      // Aguarda polling atual finalizar antes de limpar
+
       const waitForPolling = setInterval(() => {
         if (!isPolling) {
           clearInterval(waitForPolling);
         }
       }, 100);
-      // Timeout de segurança para aguardar polling
+
       setTimeout(() => clearInterval(waitForPolling), 5000);
     };
   }, [chatId, isClosed, currentCpf]);
@@ -532,7 +532,7 @@ const ChatSimulator = () => {
   return (
     <main className="content h-screen flex flex-col p-6 overflow-hidden bg-gray-50 dark:bg-gray-900">
 
-      {/* Header */}
+      {}
       <div className="bg-white dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
@@ -576,7 +576,7 @@ const ChatSimulator = () => {
 
       <div className="flex flex-1 gap-6 min-h-0">
 
-        {/* Área do Chat */}
+        {}
         <div className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm flex flex-col overflow-hidden">
           <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-gray-50/50 dark:bg-gray-900/50 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
             {messages.length === 0 && !chatId && (
@@ -654,7 +654,7 @@ const ChatSimulator = () => {
           </form>
         </div>
 
-        {/* Debug Panel */}
+        {}
         <div className="w-80 bg-[#0f172a] rounded-xl border border-gray-800 flex flex-col overflow-hidden shadow-lg">
           <div className="p-4 border-b border-gray-800 bg-[#1e293b] flex items-center gap-2 text-gray-200">
             <Terminal size={16} className="text-green-400" />
@@ -662,13 +662,13 @@ const ChatSimulator = () => {
           </div>
           <div className="flex-1 p-4 overflow-y-auto font-mono text-xs text-gray-400 space-y-4 scrollbar-thin scrollbar-thumb-gray-700">
             <div>
-              <div className="text-gray-500 mb-1">// Session Info</div>
+              <div className="text-gray-500 mb-1">
               <div className="text-blue-400 break-all">{chatId || 'null'}</div>
               {currentCpf && <div className="text-green-400 mt-1">CPF: {currentCpf}</div>}
             </div>
 
             <div>
-              <div className="text-gray-500 mb-2">// Variables</div>
+              <div className="text-gray-500 mb-2">
               {Object.keys(sessionVars).length === 0 ? (
                 <span className="text-gray-600 italic">empty</span>
               ) : (
@@ -683,7 +683,7 @@ const ChatSimulator = () => {
 
             {activeFlow && (
               <div>
-                <div className="text-gray-500 mb-1">// Active Flow</div>
+                <div className="text-gray-500 mb-1">
                 <div className="text-orange-400">{activeFlow.name}</div>
               </div>
             )}

@@ -44,7 +44,7 @@ const FlowList = () => {
     if (!name || name.trim() === "") return;
 
     try {
-      // Usa o helper postJSON (já trata headers e token)
+
       const newFlow = await postJSON('/flows', { name });
 
       if (newFlow && newFlow.id) {
@@ -99,7 +99,7 @@ const FlowList = () => {
         </button>
       </div>
 
-      {/* Barra de Busca */}
+      {}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
         <input
@@ -111,7 +111,7 @@ const FlowList = () => {
         />
       </div>
 
-      {/* Tabela */}
+      {}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 uppercase font-medium">

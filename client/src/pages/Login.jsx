@@ -18,14 +18,14 @@ const Login = () => {
         setLoading(true);
 
         try {
-            // Envia credenciais
+
             const data = await postJSON('/auth/login', {
                 username: form.username,
                 password: form.password,
             });
 
             if (data && data.user && data.token) {
-                // Login bem-sucedido
+
                 toast.dismiss();
 
                 login(data.user, data.token);
@@ -33,12 +33,12 @@ const Login = () => {
                     duration: 3000,
                 });
 
-                // REDIRECIONAMENTO INTELIGENTE
+
                 if (data.user.role === 'AGENT') {
-                    // Agentes vão direto para o chat
+
                     navigate('/agent');
                 } else {
-                    // Admins e Gerentes (Managers) vão para o monitoramento
+
                     navigate('/monitor');
                 }
             } else {
@@ -46,7 +46,7 @@ const Login = () => {
             }
         } catch (error) {
             console.error('Erro no login:', error);
-            // Mostra mensagem amigável se a senha estiver errada
+
             toast.error(error.message?.includes('401') ? 'Usuário ou senha incorretos.' : 'Erro ao conectar. Tente novamente.');
         } finally {
             setLoading(false);

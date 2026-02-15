@@ -1,9 +1,4 @@
-/**
- * MongoDB Database Adapter
- * 
- * Adaptador oficial para MongoDB - único banco de dados suportado.
- * Não utilize db.json - utilize apenas MongoDB.
- */
+
 
 import { MongoClient } from 'mongodb';
 
@@ -28,14 +23,14 @@ class MongoAdapter {
 
   async init() {
     if (this.db) return;
-    
+
     const uri = process.env.MONGODB_URI;
     const dbName = process.env.MONGODB_DB_NAME || 'fiberbot';
-    
+
     if (!uri) {
       throw new Error('MONGODB_URI não definido nas variáveis de ambiente');
     }
-    
+
     await this.connect(uri, dbName);
   }
 
@@ -57,7 +52,7 @@ class MongoAdapter {
 
     if (!data || data.length === 0) return true;
 
-    // Fazer upsert incremental em vez de sobrescrever tudo
+
     const operations = data.map(doc => ({
       updateOne: {
         filter: { id: doc.id },
@@ -70,7 +65,7 @@ class MongoAdapter {
     return true;
   }
 
-  // Métodos específicos otimizados
+
   async getUsers(tenantId = null) {
     return await this.getCollection('users', tenantId);
   }
@@ -112,7 +107,7 @@ class MongoAdapter {
   }
 }
 
-// Singleton instance
+
 const adapter = new MongoAdapter();
 
 export default adapter;

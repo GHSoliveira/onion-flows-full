@@ -58,8 +58,8 @@ const AgentManager = () => {
   };
 
   const toggleQueue = (q) => {
-    // q é o objeto da fila {id, name, color}
-    // Salvamos q.name para manter a compatibilidade com o resto do sistema
+
+
     const newQueues = form.queues.includes(q.name)
       ? form.queues.filter(name => name !== q.name)
       : [...form.queues, q.name];
@@ -73,7 +73,7 @@ const AgentManager = () => {
     if (form.password.length < 6) return toast.error("A senha deve ter pelo menos 6 caracteres.");
 
     try {
-      // Incluir tenantId do contexto atual
+
       const userData = {
         ...form,
         tenantId: tenant?.id || null
@@ -132,7 +132,7 @@ const AgentManager = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Formulário */}
+        {}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm h-fit">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-blue-500" /> Novo Usuário
@@ -207,7 +207,7 @@ const AgentManager = () => {
           </form>
         </div>
 
-        {/* Lista */}
+        {}
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
           {loading ? (
             <div className="p-8 text-center text-gray-500">Carregando...</div>
@@ -285,7 +285,7 @@ const AgentManager = () => {
         </h2>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Criar Fila */}
+          {}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nome da Nova Fila</label>
             <div className="flex gap-2">
@@ -301,7 +301,7 @@ const AgentManager = () => {
             </div>
           </div>
 
-          {/* Listagem de Filas */}
+          {}
           <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
             <table className="w-full text-sm text-left">
               <thead className="bg-gray-50 dark:bg-gray-700 text-gray-500">

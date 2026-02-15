@@ -1,6 +1,6 @@
 import { MongoClient } from 'mongodb';
 
-// Configuração MongoDB
+
 const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.MONGODB_DB_NAME || 'fiberbot';
 
@@ -12,10 +12,10 @@ if (!MONGODB_URI) {
 let client;
 let db;
 
-// Conectar ao MongoDB
+
 export const connectDB = async () => {
-  if (client) return db; // Já conectado
-  
+  if (client) return db;
+
   try {
     client = new MongoClient(MONGODB_URI);
     await client.connect();
@@ -28,7 +28,7 @@ export const connectDB = async () => {
   }
 };
 
-// Repositório Genérico
+
 export class MongoRepository {
   constructor(collectionName) {
     this.collection = () => db.collection(collectionName);
@@ -95,7 +95,7 @@ export class MongoRepository {
   }
 }
 
-// Fechar conexão
+
 export const closeDB = async () => {
   if (client) {
     await client.close();

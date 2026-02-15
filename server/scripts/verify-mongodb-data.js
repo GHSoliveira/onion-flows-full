@@ -1,13 +1,4 @@
-/**
- * Script de verificação e migração de dados do MongoDB
- *
- * Este script verifica se os documentos têm tenantId correto
- * e pode corrigir dados que estão sem tenantId
- *
- * USO:
- *   node scripts/verify-mongodb-data.js          # Apenas verificar
- *   node scripts/verify-mongodb-data.js --fix    # Corrigir dados
- */
+
 
 import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
@@ -62,7 +53,7 @@ async function verifyMongoDB() {
 
       console.log(`📦 ${collectionName}: ${docs.length} documentos`);
 
-      // Contar documentos com e sem tenantId
+
       const withTenantId = docs.filter(d => d.tenantId !== undefined && d.tenantId !== null);
       const withoutTenantId = docs.filter(d => d.tenantId === undefined || d.tenantId === null);
 
@@ -70,7 +61,7 @@ async function verifyMongoDB() {
         console.log(`   ⚠️  ${withoutTenantId.length} documentos SEM tenantId`);
         console.log(`   ✅ ${withTenantId.length} documentos COM tenantId`);
 
-        // Mostrar exemplo de documento sem tenantId
+
         if (withoutTenantId.length > 0 && withoutTenantId.length <= 3) {
           withoutTenantId.forEach(d => {
             console.log(`      - ID: ${d.id}, Name: ${d.name || d.username || 'N/A'}`);
@@ -100,7 +91,7 @@ async function verifyMongoDB() {
       for (const collectionName of COLLECTIONS_TO_CHECK) {
         const collection = db.collection(collectionName);
 
-        // Encontrar documentos sem tenantId
+
         const result = await collection.updateMany(
           { tenantId: { $exists: false } },
           { $set: { tenantId: null } }
@@ -129,5 +120,5 @@ async function verifyMongoDB() {
   }
 }
 
-// Executar
+
 verifyMongoDB();

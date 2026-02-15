@@ -14,8 +14,8 @@ const AgentWorkspace = () => {
   const [agentInput, setAgentInput] = useState('');
   const chatEndRef = useRef(null);
 
-  // 1. Polling Unificado
-  // 1. Polling Unificado Seguro
+
+
   useEffect(() => {
     let isMounted = true;
     let timeoutId;
@@ -28,7 +28,7 @@ const AgentWorkspace = () => {
         if (res && res.ok && isMounted) {
           const data = await res.json();
 
-          // Comparações simples para evitar setStates desnecessários
+
           setWaitingChats(prev => JSON.stringify(prev) !== JSON.stringify(data.waiting) ? data.waiting : prev);
           setMyChats(prev => JSON.stringify(prev) !== JSON.stringify(data.active) ? data.active : prev);
 
@@ -53,7 +53,7 @@ const AgentWorkspace = () => {
       isMounted = false;
       clearTimeout(timeoutId);
     };
-  }, [user, selectedChat?.id]); // Removido selectedChat inteiro da dependência
+  }, [user, selectedChat?.id]);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [selectedChat?.messages]);
 
@@ -129,7 +129,7 @@ const AgentWorkspace = () => {
   return (
     <div className="flex h-full w-full overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm">
 
-      {/* SIDEBAR INTERNA (Listas) - Largura fixa para não espremer */}
+      {}
       <aside className="w-80 min-w-[320px] bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col z-10">
         <div className="p-4 bg-slate-50 dark:bg-slate-900 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
           <div>
@@ -141,7 +141,7 @@ const AgentWorkspace = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-          {/* Meus Atendimentos */}
+          {}
           <div className="sticky top-0 z-20 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-bold uppercase flex items-center gap-2 border-b border-blue-100 dark:border-blue-800/30">
             <MessageCircle size={14} /> Em Atendimento ({myChats.length})
           </div>
@@ -163,7 +163,7 @@ const AgentWorkspace = () => {
             ))
           )}
 
-          {/* Fila de Espera */}
+          {}
           <div className="sticky top-0 z-20 px-4 py-2 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 text-xs font-bold uppercase flex items-center gap-2 border-y border-orange-100 dark:border-orange-800/30 mt-2">
             <Clock size={14} /> Fila de Espera ({waitingChats.length})
           </div>
@@ -187,7 +187,7 @@ const AgentWorkspace = () => {
         </div>
       </aside>
 
-      {/* ÁREA PRINCIPAL (CHAT) - Flex 1 para ocupar o resto */}
+      {}
       <main className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900 relative min-w-0">
         {selectedChat ? (
           <>
@@ -221,7 +221,7 @@ const AgentWorkspace = () => {
               </div>
             </header>
 
-            {/* CRM Rápido */}
+            {}
             {selectedChat.status === 'open' && (
               <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-2 flex gap-6 overflow-x-auto shrink-0 scrollbar-hide">
                 {Object.entries(selectedChat.variables || {}).map(([key, val]) => (
@@ -233,7 +233,7 @@ const AgentWorkspace = () => {
               </div>
             )}
 
-            {/* Lista de Mensagens */}
+            {}
             <div className="flex-1 p-6 overflow-y-auto space-y-3 custom-scrollbar bg-gray-50/50 dark:bg-gray-900/50">
               {selectedChat.messages.map((m, i) => (
                 <div key={i} className={`flex ${m.sender === 'agent' ? 'justify-end' : 'justify-start'}`}>
@@ -255,7 +255,7 @@ const AgentWorkspace = () => {
               <div ref={chatEndRef} />
             </div>
 
-            {/* Input */}
+            {}
             <form onSubmit={handleSend} className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex gap-3 shrink-0">
               <input
                 className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-gray-800 text-gray-900 dark:text-white"

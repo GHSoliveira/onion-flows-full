@@ -31,7 +31,7 @@ export const TenantProvider = ({ children }) => {
         const data = await res.json();
         setTenant(data);
         setUserRole(data.role);
-        // ✅ SALVAR no localStorage para persistência
+
         localStorage.setItem("selectedTenant", JSON.stringify(data));
       }
     } catch (error) {

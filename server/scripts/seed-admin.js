@@ -6,16 +6,16 @@ dotenv.config();
 
 async function seedAdmin() {
   console.log('🔌 Conectando ao MongoDB Atlas...');
-  
+
   const client = new MongoClient(process.env.MONGODB_URI);
   await client.connect();
-  
+
   const db = client.db(process.env.MONGODB_DB_NAME || 'fluxadmin');
   const users = db.collection('users');
-  
+
   console.log('✅ Conectado ao MongoDB Atlas');
-  
-  // Verificar se admin já existe
+
+
   const existing = await users.findOne({ username: 'admin' });
   if (existing) {
     console.log('ℹ️ Usuário admin já existe no banco de dados');
@@ -24,11 +24,11 @@ async function seedAdmin() {
     await client.close();
     return;
   }
-  
-  // Criar admin
+
+
   console.log('🔐 Criando usuário admin...');
   const hashedPassword = await bcrypt.hash('123', 12);
-  
+
   await users.insertOne({
     id: 'u_admin',
     name: 'Super Admin',
@@ -41,12 +41,12 @@ async function seedAdmin() {
     createdAt: new Date(),
     updatedAt: new Date()
   });
-  
+
   console.log('✅ Usuário admin criado com sucesso!');
   console.log('   Username: admin');
   console.log('   Password: 123');
   console.log('   Role: SUPER_ADMIN');
-  
+
   await client.close();
   process.exit(0);
 }

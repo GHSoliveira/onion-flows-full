@@ -26,20 +26,20 @@ export const AuthProvider = ({ children }) => {
         window.location.href = '/login';
     };
 
-    // Heartbeat para manter online
+
     useEffect(() => {
         if (!user) return;
 
         let consecutiveErrors = 0;
         let isMounted = true;
-        const maxErrors = 3; // Para após 3 erros consecutivos
+        const maxErrors = 3;
 
         const beat = setInterval(async () => {
             if (!isMounted) return;
 
             try {
-                await apiRequest('/auth/heartbeat'); // GET é o método padrão
-                consecutiveErrors = 0; // Reset em sucesso
+                await apiRequest('/auth/heartbeat');
+                consecutiveErrors = 0;
             } catch (error) {
                 consecutiveErrors++;
                 if (consecutiveErrors >= maxErrors) {
@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }) => {
                     clearInterval(beat);
                 }
             }
-        }, 15000); // 15s para não sobrecarregar
+        }, 15000);
 
         return () => {
             isMounted = false;
