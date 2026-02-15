@@ -44,10 +44,14 @@ const VariableManager = () => {
 
   const handleDelete = async (id) => {
     if (!confirm('Excluir variavel?')) return
+
+    const previousVariables = variables
+    setVariables(prev => prev.filter(v => v.id !== id))
+
     try {
       await deleteJSON(`/variables/${id}`)
-      setVariables(variables.filter(v => v.id !== id))
     } catch (error) {
+      setVariables(previousVariables)
       alert('Erro ao excluir')
     }
   }
@@ -184,3 +188,4 @@ const VariableManager = () => {
 }
 
 export default VariableManager
+

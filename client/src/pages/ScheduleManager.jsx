@@ -75,11 +75,15 @@ const ScheduleManager = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Tem certeza? Isso pode afetar fluxos ativos.")) return;
+
+    const previousSchedules = schedules;
+    setSchedules(prev => prev.filter(s => s.id !== id));
+
     try {
       await deleteJSON(`/schedules/${id}`);
-      setSchedules(schedules.filter(s => s.id !== id));
       toast.success("Horário removido.");
     } catch (error) {
+      setSchedules(previousSchedules);
       toast.error("Erro ao excluir.");
     }
   };
@@ -271,3 +275,4 @@ const ScheduleManager = () => {
 };
 
 export default ScheduleManager;
+

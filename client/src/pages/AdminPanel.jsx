@@ -87,6 +87,9 @@ export default function AdminPanel() {
       return;
     }
 
+    const previousTenants = tenants;
+    setTenants(prev => prev.filter(t => t.id !== id));
+
     try {
       const res = await apiRequest(`/tenants/${id}`, {
         method: 'DELETE',
@@ -94,11 +97,12 @@ export default function AdminPanel() {
       });
       if (res && res.ok) {
         toast.success('Tenant removido!');
-        fetchTenants();
       } else {
+        setTenants(previousTenants);
         toast.error('Erro ao remover');
       }
     } catch (error) {
+      setTenants(previousTenants);
       toast.error('Erro ao remover tenant');
     }
   };
@@ -435,3 +439,4 @@ export default function AdminPanel() {
     </div>
   );
 }
+

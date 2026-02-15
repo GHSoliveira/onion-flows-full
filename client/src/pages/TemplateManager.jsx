@@ -86,11 +86,15 @@ const TemplateManager = () => {
 
   const handleDelete = async (id) => {
     if (!confirm("Excluir este modelo?")) return;
+
+    const previousTemplates = templates;
+    setTemplates(prev => prev.filter(t => t.id !== id));
+
     try {
       await apiRequest(`/templates/${id}`, { method: 'DELETE' });
-      fetchTemplates();
       toast.success("Modelo removido");
     } catch (e) {
+      setTemplates(previousTemplates);
       toast.error("Erro ao excluir");
     }
   };
@@ -306,3 +310,4 @@ const TemplateManager = () => {
 };
 
 export default TemplateManager;
+

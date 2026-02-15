@@ -1,4 +1,4 @@
-ï»¿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { apiRequest } from '../services/api';
 import { useTenant } from '../context/TenantContext';
 import { Users, UserPlus, Trash2, Shield, Briefcase, Headset, Star, MessageSquareText, X } from 'lucide-react';
@@ -40,9 +40,21 @@ const AgentManager = () => {
   };
 
   const handleDeleteQueue = async (id) => {
-    if (!confirm("Excluir fila? Agentes nela perderÃ£o o acesso.")) return;
-    await apiRequest(`/queues/${id}`, { method: 'DELETE' });
-    fetchQueues();
+    if (!confirm("Excluir fila? Agentes nela perderão o acesso.")) return;
+
+    const previousQueues = queues;
+    setQueues(prev => prev.filter(q => q.id !== id));
+
+    try {
+      const res = await apiRequest(`/queues/${id}`, { method: 'DELETE' });
+      if (!res || !res.ok) {
+        setQueues(previousQueues);
+        toast.error("Erro ao excluir fila");
+      }
+    } catch (error) {
+      setQueues(previousQueues);
+      toast.error("Erro ao excluir fila");
+    }
   };
 
   const fetchUsers = async () => {
@@ -56,7 +68,7 @@ const AgentManager = () => {
         console.log(data)
       }
     } catch (error) {
-      toast.error('Erro ao carregar UsuÃ¡rios');
+      toast.error('Erro ao carregar Usuários');
     } finally {
       setLoading(false);
     }
@@ -74,7 +86,7 @@ const AgentManager = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.username || !form.password) return toast.error("Preencha o nome, UsuÃ¡rio e senha.");
+    if (!form.name || !form.username || !form.password) return toast.error("Preencha o nome, Usuário e senha.");
     if (form.password.length < 6) return toast.error("A senha deve ter pelo menos 6 caracteres.");
 
     try {
@@ -103,7 +115,7 @@ const AgentManager = () => {
       });
 
       if (res) {
-        toast.success('UsuÃ¡rio criado com sucesso!');
+        toast.success('Usuário criado com sucesso!');
         setForm({ name: '', username: '', password: '', role: 'AGENT', queues: [] });
         fetchUsers();
       }
@@ -113,17 +125,21 @@ const AgentManager = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Remover este UsuÃ¡rio?")) return;
+    if (!window.confirm("Remover este Usuário?")) return;
+
+    const previousUsers = users;
+    setUsers(prev => prev.filter(u => u.id !== id));
+
     try {
       const res = await apiRequest(`/users/${id}`, { method: 'DELETE' });
       if (res && res.ok) {
-        toast.success("UsuÃ¡rio removido");
-        // Limpar estado local e forÃ§ar recarregamento
-        setUsers(prev => prev.filter(u => u.id !== id));
+        toast.success("Usuário removido");
       } else {
-        toast.error("Erro ao excluir UsuÃ¡rio");
+        setUsers(previousUsers);
+        toast.error("Erro ao excluir Usuário");
       }
     } catch (error) {
+      setUsers(previousUsers);
       toast.error("Erro ao excluir");
     }
   };
@@ -144,7 +160,7 @@ const AgentManager = () => {
         });
       }
     } catch (error) {
-      toast.error('Erro ao carregar HistÃ³rico do Agente');
+      toast.error('Erro ao carregar Histórico do Agente');
     } finally {
       setLoadingAgentChats(false);
     }
@@ -190,8 +206,8 @@ const AgentManager = () => {
       <div className="p-3 sm:p-4 lg:p-6 max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">GestÃ£o de Equipe</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Gerencie acessos e permissÃµes</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestão de Equipe</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Gerencie acessos e permissões</p>
           </div>
         </div>
 
@@ -199,7 +215,7 @@ const AgentManager = () => {
           { }
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 shadow-sm h-fit">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-blue-500" /> Novo UsuÃ¡rio
+              <UserPlus className="w-5 h-5 text-blue-500" /> Novo Usuário
             </h2>
 
             <form onSubmit={handleSave} className="space-y-4">
@@ -215,7 +231,7 @@ const AgentManager = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">UsuÃ¡rio</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Usuário</label>
                   <input
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                     value={form.username}
@@ -276,7 +292,7 @@ const AgentManager = () => {
             {loading ? (
               <div className="p-8 text-center text-gray-500">Carregando...</div>
             ) : users.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">Nenhum UsuÃ¡rio encontrado.</div>
+              <div className="p-8 text-center text-gray-500">Nenhum Usuário encontrado.</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left min-w-[720px]">
@@ -287,8 +303,8 @@ const AgentManager = () => {
                       <th className="px-6 py-3">Login</th>
                       <th className="px-6 py-3">Cargo</th>
                       <th className="px-6 py-3">Filas</th>
-                      <th className="px-6 py-3">AvaliaÃ§Ã£o</th>
-                      <th className="px-6 py-3 text-right">AÃ§Ãµes</th>
+                      <th className="px-6 py-3">Avaliação</th>
+                      <th className="px-6 py-3 text-right">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -370,7 +386,7 @@ const AgentManager = () => {
         </div>
         <div className="mt-10">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <Users size={20} className="text-blue-500" /> ConfiguraÃ§Ã£o de Filas
+            <Users size={20} className="text-blue-500" /> Configuração de Filas
           </h2>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
@@ -397,7 +413,7 @@ const AgentManager = () => {
                   <thead className="bg-gray-50 dark:bg-gray-700 text-gray-500">
                     <tr>
                       <th className="px-6 py-3">Nome da Fila</th>
-                      <th className="px-6 py-3 text-right">AÃ§Ãµes</th>
+                      <th className="px-6 py-3 text-right">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -423,8 +439,8 @@ const AgentManager = () => {
           <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-4xl border border-gray-200 dark:border-gray-700 overflow-hidden max-h-[92vh] flex flex-col">
             <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">HistÃ³rico do Agente</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{selectedAgent.name} â€¢ {selectedAgent.username}</p>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Histórico do Agente</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{selectedAgent.name} • {selectedAgent.username}</p>
               </div>
               <button
                 onClick={closeAgentModal}
@@ -437,15 +453,15 @@ const AgentManager = () => {
 
             <div className="px-4 sm:px-6 py-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                <p className="text-xs text-gray-500 dark:text-gray-400">Chats atribuÃ­dos</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Chats atribuídos</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{agentStats.total}</p>
               </div>
               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                <p className="text-xs text-gray-500 dark:text-gray-400">Clientes Ãºnicos</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Clientes únicos</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{agentStats.uniqueCustomers}</p>
               </div>
               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                <p className="text-xs text-gray-500 dark:text-gray-400">MÃ©dia de avaliaÃ§Ã£o</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Média de avaliação</p>
                 <div className="flex items-center gap-2 mt-1">
                   {renderStars(selectedAgent.ratingAvg)}
                   <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -457,12 +473,12 @@ const AgentManager = () => {
 
             <div className="px-4 sm:px-6 pb-6 flex-1 overflow-hidden">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Ãšltimos atendimentos</h4>
-                <span className="text-xs text-gray-500 dark:text-gray-400">Mostrando atÃ© 100 registros</span>
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Últimos atendimentos</h4>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Mostrando até 100 registros</span>
               </div>
               <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden max-h-[420px] overflow-y-auto">
                 {loadingAgentChats ? (
-                  <div className="p-6 text-center text-gray-500">Carregando histÃ³rico...</div>
+                  <div className="p-6 text-center text-gray-500">Carregando histórico...</div>
                 ) : agentChats.length === 0 ? (
                   <div className="p-6 text-center text-gray-500">Nenhum atendimento encontrado.</div>
                 ) : (
@@ -474,7 +490,7 @@ const AgentManager = () => {
                         <th className="px-4 py-3">Canal</th>
                         <th className="px-4 py-3">Fila</th>
                         <th className="px-4 py-3">Status</th>
-                        <th className="px-4 py-3">Ãšltima mensagem</th>
+                        <th className="px-4 py-3">Última mensagem</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -519,6 +535,7 @@ const AgentManager = () => {
 };
 
 export default AgentManager;
+
 
 
 

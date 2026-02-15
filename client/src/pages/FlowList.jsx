@@ -59,11 +59,14 @@ const FlowList = () => {
   const handleDeleteFlow = async (id, name) => {
     if (!window.confirm(`Deseja realmente excluir o fluxo "${name}"?`)) return;
 
+    const previousFlows = flows;
+    setFlows(prev => prev.filter(f => f.id !== id));
+
     try {
       await deleteJSON(`/flows/${id}`);
-      setFlows(prev => prev.filter(f => f.id !== id));
       toast.success("Fluxo excluído.");
     } catch (error) {
+      setFlows(previousFlows);
       toast.error("Erro ao excluir.");
     }
   };
@@ -206,3 +209,4 @@ const FlowList = () => {
 };
 
 export default FlowList;
+
