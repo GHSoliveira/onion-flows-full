@@ -19,6 +19,19 @@ const parseText = (text, vars) => {
   });
 };
 
+const normalizeCommand = (value) => {
+  const text = String(value || '').trim().toLowerCase();
+  return text || null;
+};
+
+const findCommandNodeByInput = (flowData, text) => {
+  const normalizedInput = normalizeCommand(text);
+  if (!normalizedInput) return null;
+  return flowData.nodes.find(
+    (node) => node.type === 'commandNode' && normalizeCommand(node.data?.command) === normalizedInput
+  ) || null;
+};
+
 const resolveVariables = (varMap, globalVars) => {
   const localContext = { ...globalVars };
   if (varMap && Array.isArray(varMap)) {
@@ -468,6 +481,22 @@ export const runFlow = async ({
     return;
   }
 
+  if (node.type === 'commandNode') {
+    const edge = flowData.edges.find((e) => e.source === nodeId);
+    if (edge) {
+      await runFlow({
+        nodeId: edge.target,
+        flowData,
+        currentVars,
+        chatId,
+        templates,
+        schedules,
+        sendMessage
+      });
+    }
+    return;
+  }
+
   if (node.type === 'caseNode') {
     const edge = flowData.edges.find((e) => e.source === nodeId);
     if (edge) {
@@ -548,12 +577,30 @@ export const applyUserInput = async ({
   schedules,
   sendMessage
 }) => {
+  const currentVars = chat?.vars || {};
+
+  if (text && flowData?.nodes) {
+    const commandNode = findCommandNodeByInput(flowData, text);
+    if (commandNode) {
+      console.log(`[FLOW] Command matched (${text}) -> ${commandNode.id}`);
+      await setCurrentNodeId(chat.id, null);
+      await runFlow({
+        nodeId: commandNode.id,
+        flowData,
+        currentVars,
+        chatId: chat.id,
+        templates,
+        schedules,
+        sendMessage
+      });
+      return;
+    }
+  }
+
   if (!chat?.currentNodeId) return;
   const node = flowData.nodes.find((n) => n.id === chat.currentNodeId);
   if (!node) return;
   console.log(`[FLOW] User input on ${node.type} (${node.id}) at ${new Date().toISOString()}`);
-
-  const currentVars = chat.vars || {};
 
   if (node.type === 'ratingNode') {
     const answered = (text || '').trim();
