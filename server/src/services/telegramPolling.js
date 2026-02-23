@@ -4,6 +4,12 @@ import { getAllTelegramConfigs } from './channelConfig.js';
 
 export const startTelegramPolling = () => {
   const offsets = new Map();
+  const maskToken = (token) => {
+    if (!token) return 'null';
+    const value = String(token).trim();
+    if (value.length <= 10) return '***';
+    return `${value.slice(0, 6)}...${value.slice(-4)}`;
+  };
 
   const poll = async () => {
     try {
@@ -22,17 +28,25 @@ export const startTelegramPolling = () => {
       for (const config of configs) {
         const botToken = config.telegram?.botToken;
         if (!botToken || config.telegram?.usePolling === false) continue;
-        const offset = offsets.get(botToken);
-        const updates = await getUpdates(botToken, offset);
-        if (Array.isArray(updates)) {
-          for (const update of updates) {
-            offsets.set(botToken, (update.update_id || 0) + 1);
-            await handleTelegramUpdate(update, {
-              tenantId: config.tenantId,
-              flowId: config.telegram?.flowId || null,
-              botToken
-            });
+
+        try {
+          const offset = offsets.get(botToken);
+          const updates = await getUpdates(botToken, offset);
+          if (Array.isArray(updates)) {
+            for (const update of updates) {
+              offsets.set(botToken, (update.update_id || 0) + 1);
+              await handleTelegramUpdate(update, {
+                tenantId: config.tenantId,
+                flowId: config.telegram?.flowId || null,
+                botToken
+              });
+            }
           }
+        } catch (error) {
+          console.error(
+            `Erro Telegram polling (tenant=${config.tenantId || 'null'}, token=${maskToken(botToken)}):`,
+            error.message || error
+          );
         }
       }
     } catch (error) {
