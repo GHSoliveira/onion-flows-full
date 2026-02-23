@@ -36,6 +36,43 @@ const loadChatById = async (req, res, id) => {
   return { allChats, chatIndex, chat };
 };
 
+const isActiveTelegramSessionForChat = async (chat) => {
+  if (!chat || chat.channel !== 'telegram') return false;
+
+  const tenantId = chat.tenantId || null;
+  const sessions = await adapter.getCollection('telegramSessions', tenantId);
+  if (!Array.isArray(sessions) || sessions.length === 0) return false;
+
+  const sameTenant = (session) => {
+    if (!tenantId) return true;
+    return !session?.tenantId || String(session.tenantId) === String(tenantId);
+  };
+
+  if (chat.channelUserId) {
+    const sessionByUser = sessions.find(
+      (session) =>
+        sameTenant(session) &&
+        String(session.userId || '') === String(chat.channelUserId)
+    );
+    if (sessionByUser) {
+      return String(sessionByUser.chatId || '') === String(chat.id);
+    }
+  }
+
+  if (chat.channelChatId) {
+    const sessionByChat = sessions.find(
+      (session) =>
+        sameTenant(session) &&
+        String(session.telegramChatId || '') === String(chat.channelChatId)
+    );
+    if (sessionByChat) {
+      return String(sessionByChat.chatId || '') === String(chat.id);
+    }
+  }
+
+  return false;
+};
+
 // Iniciar ou buscar chat de simulação
 router.post('/init', authenticate, requireTenant, async (req, res) => {
   try {
@@ -347,7 +384,18 @@ router.put('/:id/close', authenticate, requireTenant, async (req, res) => {
     const loaded = await loadChatById(req, res, id);
     if (!loaded) return;
     const { allChats, chatIndex, chat } = loaded;
-    const shouldContinue = continueFlow && chat.continueFlowAfterQueue && chat.resumeNodeId;
+    const wantsContinue = continueFlow && chat.continueFlowAfterQueue && chat.resumeNodeId;
+    let shouldContinue = Boolean(wantsContinue);
+
+    if (shouldContinue && chat.channel === 'telegram') {
+      const isActiveSession = await isActiveTelegramSessionForChat(chat);
+      if (!isActiveSession) {
+        shouldContinue = false;
+        console.warn(
+          `[CHAT_CLOSE] Telegram resume bloqueado para chat ${chat.id}: sessão ativa divergente.`
+        );
+      }
+    }
 
     if (shouldContinue) {
       chat.status = 'bot';
