@@ -80,7 +80,6 @@ const developmentOrigins = [
 
 const productionOrigins = [
   'https://onionwebflows.vercel.app',
-  'https://www.onionwebflows.site',
   CLIENT_URL
 ].filter(Boolean);
 

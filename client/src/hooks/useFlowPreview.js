@@ -90,12 +90,6 @@ const useFlowPreview = (nodes, edges, triggerPreview = false) => {
           duration: node.data?.duration || 1000,
         };
 
-      case 'commandNode':
-        return {
-          type: 'command',
-          command: node.data?.command || '',
-        };
-
       case 'scriptNode':
         try {
           const scriptResult = safeEvaluate(node.data?.script || '', variables);

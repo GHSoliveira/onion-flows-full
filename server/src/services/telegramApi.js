@@ -5,12 +5,6 @@ const getApiBase = (token) => {
   return resolved ? `https://api.telegram.org/bot${resolved}` : null;
 };
 
-export const getTelegramFileUrl = (filePath, token = null) => {
-  const resolved = resolveToken(token);
-  if (!resolved || !filePath) return null;
-  return `https://api.telegram.org/file/bot${resolved}/${filePath}`;
-};
-
 export const telegramFetch = async (method, body, token) => {
   const apiBase = getApiBase(token);
   if (!apiBase) {
@@ -53,8 +47,4 @@ export const getUpdates = async (token, offset) => {
   const payload = { timeout: 25 };
   if (offset) payload.offset = offset;
   return telegramFetch('getUpdates', payload, token);
-};
-
-export const getTelegramFile = async (fileId, token = null) => {
-  return telegramFetch('getFile', { file_id: fileId }, token);
 };

@@ -60,10 +60,10 @@ const SystemLogs = () => {
       return { color: 'text-cyan-300 bg-cyan-400/10 border-cyan-400/20', icon: Database, label: type };
     }
     switch (type) {
-      case 'PUBLISH': return { color: 'text-green-400 bg-green-400/10 border-green-400/20', icon: ShieldCheck, label: 'PUBLICAÇÃO' };
+      case 'PUBLISH': return { color: 'text-green-400 bg-green-400/10 border-green-400/20', icon: ShieldCheck, label: 'PUBLICA��O' };
       case 'SAVE': return { color: 'text-blue-400 bg-blue-400/10 border-blue-400/20', icon: Save, label: 'SALVAMENTO' };
       case 'LOGIN': return { color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20', icon: LogIn, label: 'ACESSO' };
-      case 'TRANSFER': return { color: 'text-purple-400 bg-purple-400/10 border-purple-400/20', icon: ArrowRightLeft, label: 'TRANSFERÊNCIA' };
+      case 'TRANSFER': return { color: 'text-purple-400 bg-purple-400/10 border-purple-400/20', icon: ArrowRightLeft, label: 'TRANSFER�NCIA' };
       case 'CHAT_START': return { color: 'text-pink-400 bg-pink-400/10 border-pink-400/20', icon: MessageSquare, label: 'NOVO CHAT' };
       case 'ERROR': return { color: 'text-red-400 bg-red-400/10 border-red-400/20', icon: AlertCircle, label: 'ERRO' };
       default: return { color: 'text-gray-400 bg-gray-400/10 border-gray-400/20', icon: Activity, label: type || 'SISTEMA' };
@@ -74,10 +74,10 @@ const SystemLogs = () => {
     if (type.startsWith('FLOW')) return 'Fluxos';
     if (type.startsWith('CHAT_MESSAGE')) return 'Mensagens';
     if (type.startsWith('CHAT')) return 'Chats';
-    if (type.startsWith('VARIABLE')) return 'Variáveis';
+    if (type.startsWith('VARIABLE')) return 'Vari�veis';
     if (type.startsWith('TEMPLATE')) return 'Templates';
     if (type.startsWith('QUEUE')) return 'Filas';
-    if (type.startsWith('USER')) return 'Usuários';
+    if (type.startsWith('USER')) return 'Usu�rios';
     if (type.startsWith('DB_')) return 'Banco de dados';
     return 'Sistema';
   };
@@ -110,7 +110,7 @@ const SystemLogs = () => {
         </div>
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">Logs de Auditoria</h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Registro imutável de ações administrativas e operacionais.</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Registro imut�vel de a��es administrativas e operacionais.</p>
         </div>
       </div>
 
@@ -129,7 +129,7 @@ const SystemLogs = () => {
             >
               Prev
             </button>
-            <span>Página {page} de {totalPages}</span>
+            <span>P�gina {page} de {totalPages}</span>
             <button
               onClick={() => fetchLogs(Math.min(totalPages, page + 1))}
               disabled={page >= totalPages}
