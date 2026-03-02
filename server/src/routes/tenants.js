@@ -216,7 +216,7 @@ router.delete('/:tenantId', authenticate, authorize(['SUPER_ADMIN']), requireSup
     const confirm = req.body?.confirm === true || req.body?.confirm === 'true';
     const reason = String(req.body?.reason || '').trim();
     if (!confirm || reason.length < 3) {
-      return res.status(400).json({ error: 'ConfirmaÃ§Ã£o e motivo sÃ£o obrigatÃ³rios' });
+      return res.status(400).json({ error: 'Confirmação e motivo são obrigatórios' });
     }
     const tenants = await adapter.getCollection('tenants');
     const tenant = tenants.find(t => t.id === tenantId);

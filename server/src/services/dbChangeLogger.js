@@ -37,7 +37,7 @@ export const startDbChangeLogger = async () => {
     if (!adapter.db) await adapter.init();
     const db = adapter.db;
     if (!db || typeof db.watch !== 'function') {
-      console.warn('[DB] Change streams nÃ£o disponÃ­veis para logging.');
+      console.warn('[DB] Change streams não disponíveis para logging.');
       return;
     }
 
@@ -84,7 +84,7 @@ export const startDbChangeLogger = async () => {
 
     console.log('âœ… DB change logger ativo');
   } catch (error) {
-    console.warn('[DB] Logging via change stream indisponÃ­vel:', error.message || error);
+    console.warn('[DB] Logging via change stream indisponível:', error.message || error);
   }
 };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Plus, Trash2, Code, Split, FileText, Send, Clock, Users, Hourglass, Anchor, Database, Globe, Flag } from 'lucide-react';
+import { X, Save, Plus, Trash2, Code, Split, FileText, Send, Clock, Users, Hourglass, Anchor, Database, Globe, Flag, Hash } from 'lucide-react';
 
 const ConfigWrapper = ({ title, onClose, onSave, children }) => (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
@@ -339,6 +339,23 @@ const GotoConfig = ({ data, onChange }) => (
     </div>
 );
 
+const CommandConfig = ({ data, onChange }) => (
+    <div className="space-y-4">
+        <div>
+            <label className="text-xs font-bold text-gray-500 uppercase">Comando do Cliente</label>
+            <input
+                className="w-full mt-1 p-2 border rounded-lg text-sm dark:bg-gray-700"
+                placeholder="Ex: #atendimento"
+                value={data.command || ''}
+                onChange={e => onChange({ command: e.target.value })}
+            />
+            <p className="text-[10px] text-gray-400 mt-1">
+                Quando o cliente enviar exatamente este comando, o fluxo salta para este nó.
+            </p>
+        </div>
+    </div>
+);
+
 const FinalNodeConfig = ({ data, onChange }) => (
     <div className="space-y-4">
         <div>
@@ -450,6 +467,11 @@ const NodeConfigModal = ({ node, isOpen, onClose, onSave, vars = [], templates =
             Title = 'Salto de Fluxo (GoTo)';
             Icon = Send;
             Content = <GotoConfig data={localData} onChange={handleLocalChange} />;
+            break;
+        case 'commandNode':
+            Title = 'Comando Global';
+            Icon = Hash;
+            Content = <CommandConfig data={localData} onChange={handleLocalChange} />;
             break;
         case 'anchorNode':
             Title = 'Configurar Âncora';

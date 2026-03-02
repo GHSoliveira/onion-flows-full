@@ -1,4 +1,5 @@
 import express from 'express';
+import bcrypt from 'bcrypt';
 import { authenticate } from '../middleware/auth.js';
 import { authorize } from '../middleware/authorization.js';
 import { requireTenant } from '../middleware/tenant.js';
@@ -56,7 +57,7 @@ router.post('/', authenticate, authorize(['ADMIN', 'SUPER_ADMIN']), requireTenan
       id: `u_${Date.now()}`,
       name,
       username,
-      password,
+      password: await bcrypt.hash(password, 10),
       role: req.user.role === 'SUPER_ADMIN' && role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : (role || 'AGENT'),
       queues: queues || [],
       permissions: req.user.role === 'SUPER_ADMIN' ? (permissions || []) : [],

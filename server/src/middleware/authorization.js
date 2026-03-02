@@ -24,7 +24,7 @@ export const requireSuperAdminPermission = (required = []) => (req, res, next) =
 
   const ok = required.every(p => permissions.includes(p));
   if (!ok) {
-    return res.status(403).json({ error: 'PermissÃ£o insuficiente' });
+    return res.status(403).json({ error: 'Permissão insuficiente' });
   }
   next();
 };

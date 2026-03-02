@@ -175,12 +175,12 @@ const Channels = () => {
       if (res && res.ok) {
         const settings = await res.json();
         setAgentVars(settings.agentViewVars || []);
-        toast.success('Configura��o salva');
+        toast.success('Configuração salva');
       } else {
         toast.error('Falha ao salvar');
       }
     } catch (error) {
-      console.error('Erro ao salvar configura��es:', error);
+      console.error('Erro ao salvar configurações:', error);
       toast.error('Falha ao salvar');
     } finally {
       setSavingSettings(false);
@@ -218,7 +218,7 @@ const Channels = () => {
         </div>
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">Canais de Atendimento</h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Configure bots e integra��es por tenant.</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Configure bots e integrações por tenant.</p>
         </div>
       </div>
 
@@ -452,7 +452,7 @@ const Channels = () => {
                 <div>
                   <div className="text-sm font-semibold text-gray-900 dark:text-white">Telegram</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {telegram.enabled ? 'Ativo' : 'Inativo'} � {telegram.botToken ? 'Token definido' : 'Sem token'}
+                    {telegram.enabled ? 'Ativo' : 'Inativo'} • {telegram.botToken ? 'Token definido' : 'Sem token'}
                   </div>
                 </div>
                 <span className={`text-xs font-semibold px-2 py-1 rounded-full ${telegram.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
@@ -463,7 +463,7 @@ const Channels = () => {
                 <div>
                   <div className="text-sm font-semibold text-gray-900 dark:text-white">WhatsApp</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {whatsapp.enabled ? 'Ativo' : 'Inativo'} � {whatsapp.phoneNumberId ? 'N�mero definido' : 'Sem n�mero'}
+                    {whatsapp.enabled ? 'Ativo' : 'Inativo'} • {whatsapp.phoneNumberId ? 'Número definido' : 'Sem número'}
                   </div>
                 </div>
                 <span className={`text-xs font-semibold px-2 py-1 rounded-full ${whatsapp.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
@@ -471,15 +471,15 @@ const Channels = () => {
                 </span>
               </div>
               <div className="text-xs text-gray-400">
-                �ltima atualiza��o: {lastSavedAt ? new Date(lastSavedAt).toLocaleString('pt-BR') : '�'}
+                Última atualização: {lastSavedAt ? new Date(lastSavedAt).toLocaleString('pt-BR') : '-'}
               </div>
             </div>
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Vari�veis no atendimento</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Variáveis no atendimento</h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-              Defina quais vari�veis do fluxo ser�o exibidas para o agente.
+              Defina quais variáveis do fluxo serão exibidas para o agente.
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
               <input
@@ -498,7 +498,7 @@ const Channels = () => {
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               {agentVars.length === 0 ? (
-                <span className="text-xs text-gray-400">Sem vari�veis configuradas.</span>
+                <span className="text-xs text-gray-400">Sem variáveis configuradas.</span>
               ) : (
                 agentVars.map((value) => (
                   <span key={value} className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-xs">
@@ -508,7 +508,7 @@ const Channels = () => {
                       onClick={() => handleRemoveVar(value)}
                       className="text-blue-700 hover:text-blue-900"
                     >
-                      �
+                      ×
                     </button>
                   </span>
                 ))
@@ -521,7 +521,7 @@ const Channels = () => {
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 w-full sm:w-auto justify-center"
               >
                 <Save size={16} />
-                {savingSettings ? 'Salvando...' : 'Salvar Vari�veis'}
+                {savingSettings ? 'Salvando...' : 'Salvar Variáveis'}
               </button>
             </div>
           </div>

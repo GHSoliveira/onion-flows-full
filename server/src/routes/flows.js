@@ -32,11 +32,21 @@ router.get('/', authenticate, requireTenant, async (req, res) => {
 
 router.get('/:id', authenticate, async (req, res) => {
   try {
+    const requestedTenantId = req.query.tenantId || null;
+    const effectiveTenantId =
+      req.user.role === 'SUPER_ADMIN'
+        ? (requestedTenantId || req.user.tenantId || null)
+        : req.user.tenantId;
+
     const allFlows = await adapter.getCollection('flows');
-    const flow = allFlows.find(f => f.id === req.params.id);
+    const flow = allFlows.find((entry) => {
+      if (entry.id !== req.params.id) return false;
+      if (req.user.role === 'SUPER_ADMIN' && !effectiveTenantId) return true;
+      return String(entry.tenantId || '') === String(effectiveTenantId || '');
+    });
 
     if (!flow) {
-      return res.status(404).json({ error: 'Fluxo não encontrado' });
+      return res.status(404).json({ error: 'Fluxo nao encontrado' });
     }
 
     res.json(flow);
@@ -60,7 +70,7 @@ router.post('/', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']), r
       version: 1,
       tenantId: req.user.role === 'SUPER_ADMIN' ? (req.body.tenantId || req.tenantId) : req.tenantId,
       draft: {
-        nodes: [{ id: 'start', type: 'startNode', position: { x: 400, y: 300 }, data: { label: 'Início', text: 'Início' } }],
+        nodes: [{ id: 'start', type: 'startNode', position: { x: 400, y: 300 }, data: { label: 'Inicio', text: 'Inicio' } }],
         edges: []
       },
       published: null
@@ -89,15 +99,14 @@ router.put('/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']),
   try {
     const { nodes, edges, status, name, description, published } = req.body;
     const allFlows = await adapter.getCollection('flows');
-    const flow = allFlows.find(f => f.id === req.params.id);
+    const flow = allFlows.find((entry) => entry.id === req.params.id);
 
-    if (!flow) return res.status(404).json({ error: 'Fluxo não encontrado' });
+    if (!flow) return res.status(404).json({ error: 'Fluxo nao encontrado' });
 
     if (req.user.role !== 'SUPER_ADMIN' && flow.tenantId !== req.tenantId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
-    // Se houver published, salvar uma cópia do draft como published
     const draftSnapshot = {
       nodes: [...nodes],
       edges: [...edges]
@@ -115,7 +124,6 @@ router.put('/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']),
       version: (flow.version || 0) + 1
     };
 
-    // Se publicar, salvar uma snapshot imutável
     if (published) {
       updatedFlow.published = {
         nodes: [...nodes],
@@ -126,7 +134,6 @@ router.put('/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']),
       updatedFlow.status = 'published';
     }
 
-    // Atualizar no MongoDB diretamente
     if (!adapter.db) await adapter.init();
     const collection = adapter.db.collection('flows');
     await collection.updateOne(
@@ -135,7 +142,6 @@ router.put('/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN']),
     );
 
     await createLog('FLOW_ACTION', `Fluxo atualizado: ${updatedFlow.name}`, req.user.id, req.tenantId);
-
     res.json(updatedFlow);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -149,7 +155,6 @@ router.delete('/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN'
 
     const query = { id: req.params.id };
 
-    // Respect tenant isolation for non-super-admin users.
     if (req.user.role !== 'SUPER_ADMIN') {
       query.tenantId = req.tenantId;
     } else if (req.tenantId) {
@@ -159,7 +164,6 @@ router.delete('/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN'
     const flow = await collection.findOne(query, { projection: { id: 1, name: 1, tenantId: 1 } });
     const result = await collection.deleteOne(query);
 
-    // Idempotent delete: if already removed, treat as success.
     if (!result.deletedCount) {
       return res.json({ message: 'Fluxo ja removido', deleted: null });
     }
@@ -172,4 +176,3 @@ router.delete('/:id', authenticate, authorize(['ADMIN', 'MANAGER', 'SUPER_ADMIN'
 });
 
 export default router;
-

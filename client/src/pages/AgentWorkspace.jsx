@@ -3,10 +3,206 @@ import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '../services/api';
 import { socketService } from '../services/socket';
 import {
-  User, MessageCircle, Clock, Play, XCircle, Send, LogOut, Headset, Star
+  User, MessageCircle, Clock, Play, Pause, XCircle, Send, LogOut, Headset, Star
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { CenterSkeleton } from '../components/LoadingSkeleton';
+
+const formatAudioTime = (value) => {
+  const totalSeconds = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+};
+
+const AudioMessagePlayer = ({ src, title }) => {
+  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return undefined;
+
+    const syncState = () => setIsPlaying(!audio.paused);
+    const syncTime = () => setCurrentTime(audio.currentTime || 0);
+    const syncDuration = () => setDuration(audio.duration || 0);
+    const onEnded = () => {
+      setIsPlaying(false);
+      setCurrentTime(0);
+    };
+
+    audio.addEventListener('play', syncState);
+    audio.addEventListener('pause', syncState);
+    audio.addEventListener('timeupdate', syncTime);
+    audio.addEventListener('loadedmetadata', syncDuration);
+    audio.addEventListener('durationchange', syncDuration);
+    audio.addEventListener('ended', onEnded);
+
+    return () => {
+      audio.removeEventListener('play', syncState);
+      audio.removeEventListener('pause', syncState);
+      audio.removeEventListener('timeupdate', syncTime);
+      audio.removeEventListener('loadedmetadata', syncDuration);
+      audio.removeEventListener('durationchange', syncDuration);
+      audio.removeEventListener('ended', onEnded);
+    };
+  }, [src]);
+
+  const togglePlayback = async () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    try {
+      if (audio.paused) {
+        await audio.play();
+      } else {
+        audio.pause();
+      }
+    } catch (error) {}
+  };
+
+  const handleSeek = (event) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const nextTime = Number(event.target.value || 0);
+    audio.currentTime = nextTime;
+    setCurrentTime(nextTime);
+  };
+
+  return (
+    <div className="mt-2 rounded-2xl border border-white/10 bg-black/10 px-3 py-2.5 backdrop-blur-sm">
+      <audio ref={audioRef} preload="metadata" src={src} />
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={togglePlayback}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-sm transition hover:bg-white"
+          aria-label={isPlaying ? 'Pausar áudio' : 'Reproduzir áudio'}
+        >
+          {isPlaying ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" className="ml-0.5" />}
+        </button>
+        <div className="min-w-0 flex-1">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <span className="truncate text-xs font-semibold text-current opacity-90">{title || 'Mensagem de áudio'}</span>
+            <span className="shrink-0 text-[11px] opacity-75">
+              {formatAudioTime(currentTime)} / {formatAudioTime(duration)}
+            </span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max={Math.max(duration, 0)}
+            step="0.1"
+            value={Math.min(currentTime, duration || 0)}
+            onChange={handleSeek}
+            className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-white/20 accent-white"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ChatMedia = ({ chatId, message, onOpenImage }) => {
+  const [mediaUrl, setMediaUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    let objectUrl = null;
+
+    const loadMedia = async () => {
+      try {
+        setLoading(true);
+        setError(false);
+        const res = await apiRequest(`/chats/${chatId}/messages/${message.id}/media`);
+        if (!res || !res.ok) {
+          throw new Error('media_load_failed');
+        }
+        const blob = await res.blob();
+        objectUrl = URL.createObjectURL(blob);
+        if (active) {
+          setMediaUrl(objectUrl);
+        }
+      } catch (err) {
+        if (active) {
+          setError(true);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadMedia();
+
+    return () => {
+      active = false;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [chatId, message.id]);
+
+  if (loading) {
+    return <div className="text-xs opacity-70">Carregando midia...</div>;
+  }
+
+  if (error || !mediaUrl) {
+    return <div className="text-xs opacity-70">Falha ao carregar midia.</div>;
+  }
+
+  if (message.media?.kind === 'image') {
+    return (
+      <button
+        type="button"
+        onClick={() => onOpenImage({ url: mediaUrl, message })}
+        className="block mt-2 overflow-hidden rounded-xl border border-black/10 bg-black/5"
+      >
+        <img
+          src={mediaUrl}
+          alt={message.text || 'Imagem recebida'}
+          className="max-h-64 w-full object-cover"
+        />
+      </button>
+    );
+  }
+
+  if (message.media?.kind === 'video') {
+    return (
+      <video
+        className="mt-2 max-h-72 w-full rounded-xl border border-black/10 bg-black"
+        controls
+        preload="metadata"
+        src={mediaUrl}
+      />
+    );
+  }
+
+  if (message.media?.kind === 'audio') {
+    return (
+      <AudioMessagePlayer
+        src={mediaUrl}
+        title={message.media?.fileName || (message.media?.mimeType === 'audio/ogg' ? 'Mensagem de voz' : 'Arquivo de áudio')}
+      />
+    );
+  }
+
+  return (
+    <a
+      href={mediaUrl}
+      target="_blank"
+      rel="noreferrer"
+      className="mt-2 inline-flex text-xs underline opacity-80"
+    >
+      Abrir arquivo
+    </a>
+  );
+};
 
 const AgentWorkspace = () => {
   const { user, logout } = useAuth();
@@ -19,6 +215,7 @@ const AgentWorkspace = () => {
   const [quickReplies, setQuickReplies] = useState([]);
   const [showQuickModal, setShowQuickModal] = useState(false);
   const [quickDraft, setQuickDraft] = useState('');
+  const [imagePreview, setImagePreview] = useState(null);
   const [tick, setTick] = useState(Date.now());
   const chatEndRef = useRef(null);
   const selectedChatRef = useRef(null);
@@ -235,7 +432,14 @@ const AgentWorkspace = () => {
   const handleClose = async () => {
     if (!confirm("Encerrar atendimento?")) return;
 
-    const continueFlow = selectedChat?.continueFlowAfterQueue ?? false;
+    let continueFlow = false;
+    const canReturnToBot = Boolean(
+      selectedChat?.continueFlowAfterQueue && selectedChat?.resumeNodeId
+    );
+
+    if (canReturnToBot) {
+      continueFlow = confirm("Devolver cliente ao bot para continuar o fluxo?");
+    }
 
     try {
       await apiRequest(`/chats/${selectedChat.id}/close`, {
@@ -467,7 +671,14 @@ const AgentWorkspace = () => {
                           {m.sender === 'agent' ? 'Você' : m.sender.toUpperCase()}
                         </div>
                       )}
-                      {m.text}
+                      {m.media && selectedChat?.id ? (
+                        <ChatMedia
+                          chatId={selectedChat.id}
+                          message={m}
+                          onOpenImage={setImagePreview}
+                        />
+                      ) : null}
+                      {m.text ? <div className={m.media ? 'mt-2' : ''}>{m.text}</div> : null}
                     </div>
                   </div>
                 ))}
@@ -583,6 +794,23 @@ const AgentWorkspace = () => {
                   Enviar
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+        {imagePreview && (
+          <div
+            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+            onClick={() => setImagePreview(null)}
+          >
+            <div className="max-w-5xl max-h-full" onClick={(e) => e.stopPropagation()}>
+              <img
+                src={imagePreview.url}
+                alt={imagePreview.message?.text || 'Imagem recebida'}
+                className="max-w-full max-h-[85vh] rounded-xl shadow-2xl"
+              />
+              {imagePreview.message?.text ? (
+                <div className="mt-3 text-sm text-white/90 text-center">{imagePreview.message.text}</div>
+              ) : null}
             </div>
           </div>
         )}

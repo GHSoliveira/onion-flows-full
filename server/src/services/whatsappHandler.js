@@ -213,6 +213,12 @@ export const handleWhatsAppWebhook = async ({ payload, tenantId = null }) => {
 
     let currentChat = await getChatById(chat.id);
 
+    // During human handoff, inbound messages must not restart the bot flow.
+    if (currentChat.status === 'open' || currentChat.status === 'waiting') {
+      processed += 1;
+      continue;
+    }
+
     if (!currentChat.currentNodeId) {
       await startChatFlow({
         chatId: currentChat.id,

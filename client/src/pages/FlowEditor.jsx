@@ -16,7 +16,7 @@ import {
   MessageSquare, TextCursorInput, Split, FileText,
   Clock, Users, Code, Globe, Hourglass,
   Database, Anchor, Send, Save, Rocket,
-  Flag, Play, Star
+  Flag, Play, Star, Hash
 } from 'lucide-react';
 
 import { getJSON, putJSON } from '../services/api';
@@ -33,6 +33,7 @@ const nodeTypes = {
   conditionNode: CustomNodes.ConditionNode,
   anchorNode: CustomNodes.AnchorNode,
   gotoNode: CustomNodes.GotoNode,
+  commandNode: CustomNodes.CommandNode,
   scriptNode: CustomNodes.ScriptNode,
   finalNode: CustomNodes.FinalNode,
   httpRequestNode: CustomNodes.HttpRequestNode,
@@ -392,6 +393,7 @@ const FlowEditor = () => {
           <ToolButton icon={Hourglass} label="Delay" onClick={() => createNode('delayNode')} />
           <ToolButton icon={Database} label="Set" onClick={() => createNode('setValueNode')} />
           <ToolButton icon={Anchor} label="Flag" onClick={() => createNode('anchorNode')} />
+          <ToolButton icon={Hash} label="Cmd" onClick={() => createNode('commandNode')} />
           <ToolButton icon={Send} label="Go" onClick={() => createNode('gotoNode')} />
           <ToolButton icon={Flag} label="Fim" onClick={() => createNode('finalNode')} color="text-red-500" />
         </div>
